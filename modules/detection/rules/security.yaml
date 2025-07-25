@@ -1,0 +1,182 @@
+# Security Detection Rules
+# Patterns to identify security violations
+
+rules:
+  hardcoded_secrets:
+    description: "Detect API keys, passwords, and secrets in code"
+    severity: "critical"
+    patterns:
+      - regex: "(api[_-]?key|apikey)\\s*[:=]\\s*['\"][^'\"]{16,}['\"]"
+        message: "Potential API key found"
+        confidence: "high"
+
+      - regex: "(password|passwd|pwd)\\s*[:=]\\s*['\"][^'\"]+['\"]"
+        message: "Hardcoded password detected"
+        confidence: "high"
+        exclude_patterns:
+          - "password\\s*[:=]\\s*['\"](placeholder|example|changeme)['\"]"
+
+      - regex: "(secret|token)\\s*[:=]\\s*['\"][^'\"]{8,}['\"]"
+        message: "Potential secret or token found"
+        confidence: "medium"
+
+      - regex: "Bearer\\s+[A-Za-z0-9\\-_]{20,}"
+        message: "Hardcoded bearer token detected"
+        confidence: "high"
+
+    exceptions:
+      - pattern: "test"
+        reason: "Test files may contain example credentials"
+      - pattern: "mock"
+        reason: "Mock data may include fake credentials"
+
+  insecure_urls:
+    description: "Detect HTTP usage instead of HTTPS"
+    severity: "critical"
+    patterns:
+      - regex: "http://(?!localhost|127\\.0\\.0\\.1|0\\.0\\.0\\.0)"
+        message: "HTTP URL found - use HTTPS"
+        confidence: "high"
+        file_types: ["*.kt", "*.swift", "*.ts", "*.js", "*.tsx", "*.jsx"]
+
+      - regex: "ws://(?!localhost|127\\.0\\.0\\.1)"
+        message: "Insecure WebSocket URL - use WSS"
+        confidence: "high"
+
+    android_specific:
+      - pattern: 'android:usesCleartextTraffic="true"'
+        file: "AndroidManifest.xml"
+        message: "Cleartext traffic enabled - security risk"
+        severity: "critical"
+
+    ios_specific:
+      - pattern: "NSAllowsArbitraryLoads.*true"
+        file: "Info.plist"
+        message: "Arbitrary loads allowed - security risk"
+        severity: "critical"
+
+  insecure_storage:
+    description: "Detect insecure data storage practices"
+    severity: "critical"
+
+    android_patterns:
+      - regex: "SharedPreferences(?!\\.Editor).*\\.put(String|Int|Boolean|Float|Long)\\s*\\([^,]+,\\s*[^)]*password"
+        message: "Storing sensitive data in plain SharedPreferences"
+        suggestion: "Use EncryptedSharedPreferences"
+
+      - regex: "MODE_WORLD_[READABLE|WRITEABLE]"
+        message: "File created with world-accessible permissions"
+        confidence: "high"
+
+    ios_patterns:
+      - regex: "UserDefaults\\.standard\\.set\\([^,]+,\\s*forKey:.*(?:password|token|secret)"
+        message: "Storing sensitive data in UserDefaults"
+        suggestion: "Use Keychain Services"
+
+      - regex: "NSKeyedArchiver.*(?:password|token|secret)"
+        message: "Archiving sensitive data insecurely"
+        confidence: "medium"
+
+    web_patterns:
+      - regex: "localStorage\\.setItem\\([\"'](?:password|token|secret)"
+        message: "Storing sensitive data in localStorage"
+        severity: "critical"
+
+      - regex: "document\\.cookie.*(?:password|token|secret)"
+        message: "Storing sensitive data in cookies without security flags"
+        confidence: "medium"
+
+  weak_crypto:
+    description: "Detect weak cryptographic practices"
+    severity: "blocking"
+    patterns:
+      - regex: "(MD5|SHA1)(?!\\s*\\()"
+        message: "Weak hashing algorithm detected"
+        suggestion: "Use SHA-256 or stronger"
+
+      - regex: "DES|3DES|RC4"
+        message: "Weak encryption algorithm"
+        suggestion: "Use AES-256"
+
+      - regex: "Random\\(\\)(?!\\.nextBytes)"
+        message: "Insecure random number generation"
+        suggestion: "Use SecureRandom (Android) or Security.framework (iOS)"
+
+  certificate_pinning:
+    description: "Check for missing certificate pinning"
+    severity: "required"
+
+    android_checks:
+      - missing_pattern: "CertificatePinner"
+        in_files: ["*Api*.kt", "*Network*.kt"]
+        message: "No certificate pinning configured"
+
+      - missing_pattern: "pinning.*add\\("
+        when_present: "OkHttpClient"
+        message: "OkHttpClient without certificate pinning"
+
+    ios_checks:
+      - missing_pattern: "ServerTrustPolicy"
+        in_files: ["*Network*.swift", "*API*.swift"]
+        message: "No certificate pinning configured"
+
+  authentication_issues:
+    description: "Detect authentication vulnerabilities"
+    severity: "critical"
+    patterns:
+      - regex: "auth.*header.*\\+\\s*[\"'][^\"']*[\"']\\s*\\+"
+        message: "Building auth header with concatenation"
+        suggestion: "Use proper auth libraries"
+
+      - regex: "biometric.*fallback.*password"
+        message: "Biometric auth falling back to password"
+        confidence: "medium"
+
+detection_helpers:
+  file_context:
+    description: "Additional context for detection"
+    exclude_paths:
+      - "*/test/*"
+      - "*/mock/*"
+      - "*/example/*"
+      - "*/sample/*"
+
+    high_risk_files:
+      - "*Auth*"
+      - "*Login*"
+      - "*Payment*"
+      - "*Crypto*"
+      - "*Security*"
+
+  confidence_modifiers:
+    increase_confidence:
+      - "Production code"
+      - "Authentication related"
+      - "Payment related"
+      - "User data handling"
+
+    decrease_confidence:
+      - "Test code"
+      - "Development environment"
+      - "Example code"
+      - "Documentation"
+
+reporting:
+  format:
+    title: "Security Violation: {rule_name}"
+    body: |
+      **Severity**: {severity}
+      **File**: {file_path}
+      **Line**: {line_number}
+      **Issue**: {message}
+
+      {suggestion}
+
+      **Code**:
+      ```{language}
+      {code_snippet}
+      ```
+
+  aggregation:
+    group_by: ["severity", "rule_name"]
+    summary: "Found {count} security issues: {critical} critical, {blocking} blocking"

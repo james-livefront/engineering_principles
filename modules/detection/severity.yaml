@@ -1,0 +1,180 @@
+# Severity Levels for Principle Violations
+# Defines how serious different violations are and how they should be handled
+
+severity_levels:
+  critical:
+    description: "Violations that could cause immediate harm to users or expose sensitive data"
+    action: "Block merge immediately"
+    examples:
+      - "Hardcoded API keys or secrets"
+      - "Missing accessibility for core features"
+      - "Unencrypted sensitive data storage"
+      - "HTTP usage for sensitive endpoints"
+    notification: "Immediate - Team lead and security team"
+    resolution_time: "Must fix before any merge"
+
+  blocking:
+    description: "Violations that break core engineering standards"
+    action: "Block merge until resolved"
+    examples:
+      - "Test coverage below 80% for business logic"
+      - "Build warnings in new code"
+      - "TODOs without linked tickets"
+      - "Unapproved third-party dependencies"
+    notification: "PR comment - Author and reviewers"
+    resolution_time: "Must fix in current PR"
+
+  required:
+    description: "Standards that must be met but may have justified exceptions"
+    action: "Require explanation or fix"
+    examples:
+      - "Missing localization support"
+      - "Design deviations without designer approval"
+      - "Missing documentation for public APIs"
+      - "Code style violations"
+    notification: "PR comment"
+    resolution_time: "Fix in current PR or document exception"
+
+  recommended:
+    description: "Best practices that improve code quality"
+    action: "Suggest improvement"
+    examples:
+      - "Complex methods that could be simplified"
+      - "Missing unit tests for UI code"
+      - "Verbose code that could use platform idioms"
+      - "Missing code comments for complex logic"
+    notification: "PR comment (non-blocking)"
+    resolution_time: "Consider for current PR or create follow-up ticket"
+
+  informational:
+    description: "Observations that may be useful but don't require action"
+    action: "Comment only"
+    examples:
+      - "Performance optimization opportunities"
+      - "Alternative implementation suggestions"
+      - "New platform features that could be used"
+      - "Refactoring opportunities"
+    notification: "Optional PR comment"
+    resolution_time: "No action required"
+
+severity_by_principle:
+  security:
+    secrets_in_code: "critical"
+    http_usage: "critical"
+    unencrypted_storage: "critical"
+    missing_certificate_pinning: "required"
+    weak_encryption: "blocking"
+
+  accessibility:
+    missing_screen_reader_support: "critical"
+    insufficient_touch_targets: "blocking"
+    poor_color_contrast: "blocking"
+    missing_alt_text: "required"
+    missing_aria_labels: "required"
+
+  testing:
+    no_tests_business_logic: "blocking"
+    coverage_below_threshold: "blocking"
+    no_tests_ui: "recommended"
+    missing_edge_case_tests: "recommended"
+    flaky_tests: "required"
+
+  code_quality:
+    build_warnings: "blocking"
+    todos_without_tickets: "blocking"
+    commented_out_code: "required"
+    console_logs_in_production: "required"
+    magic_numbers: "recommended"
+
+  design:
+    major_design_deviation: "required"
+    minor_design_deviation: "recommended"
+    missing_design_states: "required"
+    inconsistent_styling: "recommended"
+
+  architecture:
+    bidirectional_data_flow: "blocking"
+    view_modifying_state: "blocking"
+    tight_coupling: "required"
+    missing_abstraction: "recommended"
+
+  dependencies:
+    unapproved_dependency: "blocking"
+    missing_license_info: "required"
+    vulnerable_dependency: "critical"
+    unnecessary_dependency: "recommended"
+
+  documentation:
+    missing_readme_section: "required"
+    missing_api_docs: "required"
+    outdated_docs: "recommended"
+    missing_inline_comments: "informational"
+
+  localization:
+    hardcoded_strings: "required"
+    hardcoded_dates: "required"
+    hardcoded_currency: "required"
+    missing_rtl_support: "recommended"
+
+context_specific_severity:
+  production_code:
+    multiplier: 1.0
+    note: "Standard severity applies"
+
+  development_code:
+    multiplier: 0.5
+    note: "Some violations less severe in dev"
+    exceptions:
+      - "Security violations remain critical"
+      - "Accessibility violations remain unchanged"
+
+  legacy_code:
+    multiplier: 0.3
+    note: "Focus on critical issues only"
+    policy: "Fix when touched"
+
+  prototype_code:
+    multiplier: 0.1
+    note: "Minimal enforcement"
+    policy: "Mark clearly as prototype"
+
+severity_escalation:
+  repeated_violations:
+    description: "Same violation across multiple PRs"
+    action: "Escalate by one level"
+    example: "Recommended becomes Required"
+
+  widespread_violations:
+    description: "Same violation across codebase"
+    action: "Team discussion required"
+    example: "Systemic architecture issues"
+
+  ignored_violations:
+    description: "Marked as resolved without fixing"
+    action: "Escalate to team lead"
+    example: "False positive claims"
+
+automated_severity_detection:
+  high_confidence:
+    description: "Tool is certain about violation"
+    examples:
+      - "Regex match for secrets"
+      - "Coverage percentage below threshold"
+      - "Build warning detection"
+    action: "Apply full severity"
+
+  medium_confidence:
+    description: "Tool suspects violation"
+    examples:
+      - "Possible hardcoded string"
+      - "Complex method detection"
+      - "Possible design pattern violation"
+    action: "Flag for human review"
+
+  low_confidence:
+    description: "Tool unsure about context"
+    examples:
+      - "Ambiguous code patterns"
+      - "Context-dependent rules"
+      - "Style preferences"
+    action: "Suggest only"
