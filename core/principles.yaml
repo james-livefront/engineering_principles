@@ -1,0 +1,250 @@
+# Each principle includes why it matters, how it happens, and enforcement mechanisms
+
+principles:
+  accessibility:
+    category: "User-First"
+    why: "Equal access to the digital products we build—regardless of ability or disability—is essential"
+    how:
+      - "We aim to support the widest possible audience"
+      - "Every feature and function must be accessible"
+      - "Accessibility is verified during code review for every feature"
+    requirements:
+      all_platforms:
+        - contrast_ratios
+        - dynamic_font_sizes
+        - touch_target_sizes
+        - screen_reader_support
+      web_specific:
+        - semantic_html
+        - wcag_2_1_compliance
+    enforcement:
+      automated: ["linter_rules", "ci_checks"]
+      manual: ["code_review_checklist", "design_audit"]
+
+  code_consistency:
+    category: "Craft Excellence"
+    why: "Consistent code style makes developers lives easier and clients happier"
+    benefits:
+      - "Code is more readable and maintainable"
+      - "Onboarding new developers is fast and fun"
+      - "Our high bar for quality is easier to hold"
+      - "Our code reflects the skill and mastery expected of us by clients"
+    how:
+      - "We use linters on every platform"
+      - "We have a style guide for every platform"
+      - "Style is checked manually during code review"
+    enforcement:
+      automated: ["platform_linters", "prettier", "format_on_save"]
+      manual: ["code_review", "style_guide_reference"]
+
+  zero_todos:
+    category: "Technical Debt Prevention"
+    why: "When you add a TODO to source code, you're defining future scope or technical debt. The work becomes lost over time and introduces confusion."
+    how:
+      - "We avoid adding TODOs to the source code"
+      - "Any work defined by a TODO must be tracked separately, outside the source code"
+      - "Every TODO must be accompanied by a link to a ticket"
+    decision_tree:
+      - question: "Can this be done now?"
+        yes: "Do it now"
+        no: "Create ticket and link in comment"
+    enforcement:
+      automated: ["grep_for_todos", "pr_checks"]
+      manual: ["code_review"]
+
+  security:
+    category: "User Protection"
+    why: "Our clients trust us to help them protect private customer and company information"
+    how:
+      - "We use HTTPS everywhere"
+      - "We never store secrets or keys in source control"
+      - "We never use personal repos"
+      - "We always assume confidentiality"
+      - "We encrypt private information on-device"
+    platform_specific:
+      ios: "Keychain for private data"
+      android: "Encrypted SharedPreferences"
+      web: "No local storage of sensitive data"
+    enforcement:
+      automated: ["secret_scanning", "https_checks"]
+      manual: ["preflight_checklist", "security_review"]
+
+  unidirectional_data_flow:
+    category: "Architecture"
+    why: "Unidirectional data flow makes the outcome of state changes more predictable. Code is easier to understand, and apps are more reliable."
+    how:
+      - "We limit where state changes happen"
+      - "Views display state, never change it"
+      - "Isolation improves modularity"
+      - "Modularity allows testing"
+    patterns:
+      android: "MVP/MVVM with RxJava"
+      ios: "Coordinator pattern with state containers"
+      web: "React + Redux"
+    enforcement:
+      automated: ["architecture_linters"]
+      manual: ["architecture_review", "code_review"]
+
+  testing:
+    category: "Reliability"
+    why: "Writing testable code has a strong, positive influence on architecture"
+    benefits:
+      - "Tested code is more modular and more reliable"
+      - "Tested code is easier to understand and change"
+      - "Testing forces us to check our assumptions"
+      - "Testing encourages writing smaller pieces of code"
+    how:
+      - "We require 80% minimum coverage on business logic"
+      - "Test coverage is checked and confirmed by CI"
+      - "Code can't be merged until it's tested"
+    scope:
+      required: ["business_logic", "data_transformations", "state_management"]
+      optional: ["ui_code", "animations", "styling"]
+    enforcement:
+      automated: ["coverage_reports", "ci_gates"]
+      manual: ["test_review", "meaningful_test_check"]
+
+  flexible_layout:
+    category: "User Experience"
+    why: "People expect software to be beautiful regardless of the type and size of hardware being used"
+    how:
+      - "We build to accommodate a wide range of devices, screen sizes, and pixel densities"
+      - "We build flexible UIs"
+      - "We ensure image assets consistently scale"
+      - "We support large font sizes for accessibility"
+      - "We support portrait and landscape orientations as required"
+    platform_specific:
+      android: "Responsive, scalable layouts"
+      ios: "Layout in code—no nibs"
+      web: "Responsive layouts with CSS Grid/Flexbox"
+    enforcement:
+      automated: ["layout_linters"]
+      manual: ["design_review", "device_testing"]
+
+  continuous_integration:
+    category: "Process"
+    why: "CI confirms the build is green, validates test coverage, automates repetitive tasks, and speeds up the feedback loop"
+    how:
+      - "We use GitHub Actions to build, test, and deploy"
+      - "CI blocks merges on failures"
+      - "Automated deployment of QA and release builds"
+      - "Jira integration for ticket management"
+    requirements:
+      - build_automation
+      - test_automation
+      - lint_checks
+      - coverage_reports
+      - automated_deployment
+    enforcement:
+      automated: ["ci_pipeline", "merge_blocks"]
+      manual: ["ci_configuration_review"]
+
+  code_reviews:
+    category: "Knowledge Sharing"
+    why: "Peer-review helps us stay consistent, be correct more often, and share implementation and design knowledge across the team"
+    how:
+      - "Every line of code we write is peer-reviewed"
+      - "Projects are hosted on GitHub"
+      - "Automation provides a code review checklist"
+      - "Code cannot be merged until checklist complete and approved"
+    requirements:
+      - checklist_completion
+      - peer_approval
+      - ci_passing
+    enforcement:
+      automated: ["pr_checks", "merge_protection"]
+      manual: ["reviewer_diligence", "checklist_verification"]
+
+  zero_build_warnings:
+    category: "Code Quality"
+    why: "Warnings are real indicators of potential problems, and they mask other problems if not addressed"
+    how:
+      - "We report build warnings automatically during CI"
+      - "We suppress irrelevant warnings with explanation"
+      - "Keep codebase warning-free to spot new issues"
+    enforcement:
+      automated: ["warning_reports", "ci_checks"]
+      manual: ["warning_review", "suppression_justification"]
+
+  design_integrity:
+    category: "Craft Excellence"
+    why: "We set ourselves apart by delivering working software that fulfills the vision laid out in the designs"
+    how:
+      - "We pay close attention to small details"
+      - "We consult directly with design team for questions"
+      - "We verify implementation matches designs"
+      - "We incorporate regular design audits"
+    tools:
+      - "Zeplin for design specs"
+      - "Design review process"
+      - "Pixel-perfect validation"
+    enforcement:
+      automated: ["screenshot_testing"]
+      manual: ["design_review", "designer_sign_off"]
+
+  localization:
+    category: "Global Reach"
+    why: "Not everyone lives in your timezone, speaks your language, uses your currency, and formats dates like you do"
+    how:
+      - "We build apps with localization support from the beginning"
+      - "Strings, dates, currencies are never hard-coded"
+      - "Support being localized without architectural changes"
+    requirements:
+      - externalized_strings
+      - locale_aware_formatting
+      - rtl_support_ready
+      - dynamic_layouts
+    enforcement:
+      automated: ["hardcoded_string_detection"]
+      manual: ["i18n_review", "string_extraction_check"]
+
+  minimal_dependencies:
+    category: "Risk Management"
+    why: "We're responsible for maintaining every single line of code we ship"
+    risks:
+      - "More libraries are abandoned than maintained"
+      - "Dependencies have dependencies (fragile networks)"
+      - "When critical dependencies break, we can't wait"
+      - "Our code is easier to understand than others'"
+    how:
+      - "All libraries must be approved by VP Technology and client"
+      - "All libraries documented in README with purpose and license"
+      - "Build vs buy analysis for each dependency"
+    enforcement:
+      automated: ["dependency_scanning", "license_checks"]
+      manual: ["dependency_review", "approval_process"]
+
+  compatibility:
+    category: "Platform Support"
+    why: "Required support for operating systems, device hardware, and APIs varies by project"
+    how:
+      - "Supported versions determined by client and product team"
+      - "Documented in README for each repository"
+      - "Tested across all supported configurations"
+    documentation:
+      - minimum_os_versions
+      - supported_devices
+      - browser_matrix
+      - api_levels
+    enforcement:
+      automated: ["compatibility_tests"]
+      manual: ["compatibility_review", "device_testing"]
+
+  documentation:
+    category: "Knowledge Transfer"
+    why: "Documentation helps all stakeholders understand what we did, how we did it, and why we did it"
+    how:
+      - "We document our source code (public and internal interfaces)"
+      - "We document our repositories (README essentials)"
+    readme_requirements:
+      - dev_setup
+      - build_and_test_process
+      - release_process
+      - compatibility_matrix
+      - dependencies_list
+      - architecture_overview
+      - automation_details
+      - ci_setup
+    enforcement:
+      automated: ["documentation_linters"]
+      manual: ["documentation_review", "readme_checklist"]

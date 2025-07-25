@@ -1,0 +1,220 @@
+# Platform-Specific Configurations
+# Details for Android, iOS, and Web platforms
+
+platforms:
+  android:
+    sdk:
+      minimum: 24
+      target: 28
+      compile: 34  # Updated for modern development
+    
+    device_support:
+      form_factors: ["phone"]
+      orientations: ["portrait", "landscape"]
+    
+    approved_dependencies:
+      architecture:
+        - name: "Dagger/Hilt"
+          purpose: "Dependency injection"
+          version: "2.x"
+      
+      reactive:
+        - name: "RxJava2"
+          purpose: "Reactive programming"
+          version: "2.x"
+        - name: "RxBinding"
+          purpose: "UI event streams"
+          version: "2.x"
+        - name: "RxPermissions"
+          purpose: "Permission handling"
+          version: "0.x"
+        - name: "RxLocation"
+          purpose: "Location services"
+          version: "1.x"
+      
+      networking:
+        - name: "Retrofit"
+          purpose: "HTTP client"
+          version: "2.x"
+        - name: "OkHttp"
+          purpose: "HTTP engine"
+          version: "4.x"
+    
+    tools:
+      linting:
+        - "Android Lint"
+        - "ktlint"
+        - "detekt"
+      
+      testing:
+        - "JUnit"
+        - "Mockito"
+        - "Espresso"
+      
+      coverage:
+        - "danger-shroud"
+        - "JaCoCo"
+    
+    security:
+      storage: "EncryptedSharedPreferences"
+      network: "Certificate pinning with OkHttp"
+    
+    ui_approach:
+      layouts: "Responsive ConstraintLayout"
+      navigation: "Navigation Component"
+      state: "ViewModel + LiveData/StateFlow"
+
+  ios:
+    os:
+      minimum: "12.0"
+      target: "17.0"  # Updated for modern development
+    
+    device_support:
+      form_factors: ["iPhone"]
+      minimum_device: "iPhone SE"
+      maximum_device: "iPhone 15 Pro Max"  # Updated
+      orientations: ["portrait", "landscape"]
+    
+    approved_dependencies:
+      # First-party only - no external dependencies
+      frameworks:
+        - "UIKit"
+        - "Foundation"
+        - "Core Data"
+        - "CloudKit"
+    
+    tools:
+      linting:
+        - "SwiftLint"
+      
+      testing:
+        - "XCTest"
+        - "Quick/Nimble (if approved)"
+      
+      coverage:
+        - "Slather"
+        - "xcov"
+    
+    security:
+      storage: "Keychain Services"
+      network: "URLSession with certificate pinning"
+    
+    ui_approach:
+      layouts: "Programmatic (no Storyboards/XIBs)"
+      navigation: "Coordinator pattern"
+      state: "Unidirectional data flow"
+
+  web:
+    browsers:
+      modern:
+        - name: "Chrome"
+          min_version: "90"
+        - name: "Safari"
+          min_version: "14"
+        - name: "Firefox"
+          min_version: "88"
+        - name: "Edge"
+          min_version: "90"
+      legacy:
+        - name: "IE"
+          version: "11"
+          note: "Requires polyfills"
+    
+    screen_support:
+      - "Mobile (320px+)"
+      - "Tablet (768px+)"
+      - "Desktop (1024px+)"
+      - "Wide (1440px+)"
+    
+    approved_dependencies:
+      framework:
+        - name: "React"
+          purpose: "UI framework"
+          version: "18.x"
+      
+      state:
+        - name: "Redux"
+          purpose: "State management"
+          version: "4.x"
+        - name: "Redux Toolkit"
+          purpose: "Redux utilities"
+          version: "1.x"
+      
+      language:
+        - name: "TypeScript"
+          purpose: "Type safety"
+          version: "5.x"
+      
+      testing:
+        - name: "Jest"
+          purpose: "Unit testing"
+          version: "29.x"
+        - name: "React Testing Library"
+          purpose: "Component testing"
+          version: "14.x"
+      
+      build:
+        - name: "Webpack"
+          purpose: "Bundling"
+          version: "5.x"
+        - name: "Vite"
+          purpose: "Alternative bundler"
+          version: "5.x"
+      
+      framework_specific:
+        - name: "Gatsby"
+          purpose: "Static site generation"
+          version: "5.x"
+        - name: "Next.js"
+          purpose: "Full-stack React"
+          version: "14.x"
+    
+    tools:
+      linting:
+        - "ESLint"
+        - "stylelint"
+        - "tsc (TypeScript compiler)"
+      
+      formatting:
+        - "Prettier"
+      
+      testing:
+        - "Jest"
+        - "Cypress (E2E)"
+        - "Playwright (E2E)"
+    
+    security:
+      storage: "No sensitive data in browser"
+      network: "HTTPS only, CSP headers"
+    
+    ui_approach:
+      markup: "Semantic HTML required"
+      styling: "CSS Modules or styled-components"
+      layouts: "CSS Grid + Flexbox"
+      state: "React + Redux"
+
+common_requirements:
+  all_platforms:
+    version_control:
+      system: "Git"
+      host: "GitHub"
+      branching: "GitFlow variant"
+    
+    ci_cd:
+      platform: "GitHub Actions"
+      requirements:
+        - "Build validation"
+        - "Test execution"
+        - "Coverage reporting"
+        - "Lint checks"
+        - "Security scans"
+    
+    release_cadence:
+      qa: "Every PR merge"
+      client: "Weekly"
+      production: "As agreed with client"
+    
+    monitoring:
+      crash_reporting: ["Firebase Crashlytics", "Sentry"]
+      analytics: ["Firebase Analytics", "Custom solutions"]
+      performance: ["Firebase Performance", "Custom APM"]

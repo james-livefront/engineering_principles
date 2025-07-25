@@ -1,0 +1,44 @@
+# This file captures the core values and mantras that guide all engineering decisions
+
+identity:
+  statement: "Livefront Engineers are craftspeople"
+  meaning:
+    - "We give a damn about building software that is reliable, performant, maintainable, and remarkably fun to use"
+    - "We see software engineering as a craft that can be mastered"
+    - "We are leaders in our field and its future"
+
+mantras:
+  - principle: "We don't defer work"
+    explanation: "If it can be done now, do it now. Otherwise, create a ticket."
+
+  - principle: "The design is the spec"
+    explanation: "We deliver working software that fulfills the vision laid out in the designs"
+
+core_values:
+  quality:
+    - "Every detail matters"
+    - "Excellence is the baseline"
+    - "Polish distinguishes good from great"
+
+  collaboration:
+    - "Knowledge sharing through code reviews"
+    - "Design and engineering work as one team"
+    - "Client success is our success"
+
+  responsibility:
+    - "We own every line of code we ship"
+    - "We protect user data and privacy"
+    - "We build for the long term"
+
+decision_hierarchy:
+  # When principles conflict, this is the priority order
+  1: Security          # Protecting users and data comes first
+  2: Accessibility     # Equal access for all users
+  3: Testing           # Reliability and confidence
+  4: Performance       # User experience
+  5: Code Style        # Maintainability
+
+cultural_expectations:
+  onboarding: "New developers should be able to build projects easily"
+  maintenance: "Code should be a joy to work with, not a burden"
+  evolution: "Practices evolve, but principles endure"

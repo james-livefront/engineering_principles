@@ -1,0 +1,249 @@
+# How Livefront ensures principles are followed
+
+enforcement_types:
+  automated:
+    description: "Checks that run without human intervention"
+    benefits:
+      - "Consistent application"
+      - "Immediate feedback"
+      - "Reduces reviewer burden"
+
+  manual:
+    description: "Checks that require human judgment"
+    benefits:
+      - "Context-aware decisions"
+      - "Nuanced evaluation"
+      - "Knowledge sharing opportunity"
+
+enforcement_tools:
+  linters:
+    purpose: "Catch style and quality issues"
+    when: "On save, pre-commit, and CI"
+    platforms:
+      android:
+        - tool: "ktlint"
+          config: ".editorconfig"
+          enforces: ["code_consistency"]
+
+        - tool: "detekt"
+          config: "detekt.yml"
+          enforces: ["code_quality", "complexity"]
+
+        - tool: "Android Lint"
+          config: "lint.xml"
+          enforces: ["accessibility", "security", "performance"]
+
+      ios:
+        - tool: "SwiftLint"
+          config: ".swiftlint.yml"
+          enforces: ["code_consistency", "code_quality"]
+
+      web:
+        - tool: "ESLint"
+          config: ".eslintrc.js"
+          enforces: ["code_consistency", "code_quality"]
+
+        - tool: "stylelint"
+          config: ".stylelintrc.js"
+          enforces: ["css_consistency"]
+
+        - tool: "tsc"
+          config: "tsconfig.json"
+          enforces: ["type_safety"]
+
+  testing_tools:
+    purpose: "Ensure code reliability and coverage"
+    when: "Pre-commit and CI"
+    coverage_tools:
+      android:
+        - tool: "JaCoCo"
+          threshold: 80
+          scope: "business_logic"
+
+        - tool: "danger-shroud"
+          purpose: "Coverage reporting in PRs"
+
+      ios:
+        - tool: "XCTest + Slather"
+          threshold: 80
+          scope: "business_logic"
+
+      web:
+        - tool: "Jest"
+          threshold: 80
+          scope: "business_logic"
+
+  ci_pipeline:
+    purpose: "Automated quality gates"
+    platform: "GitHub Actions"
+    stages:
+      - name: "build"
+        checks:
+          - "Compilation success"
+          - "No build warnings"
+          - "Dependency validation"
+
+      - name: "lint"
+        checks:
+          - "Code style compliance"
+          - "No TODOs without tickets"
+          - "No hardcoded strings"
+
+      - name: "test"
+        checks:
+          - "All tests pass"
+          - "Coverage thresholds met"
+          - "No flaky tests"
+
+      - name: "security"
+        checks:
+          - "No secrets in code"
+          - "Dependency vulnerabilities"
+          - "HTTPS enforcement"
+
+      - name: "deploy"
+        checks:
+          - "Version incremented"
+          - "Changelog updated"
+          - "Artifacts created"
+
+  code_review:
+    purpose: "Human verification of principles"
+    process:
+      1:
+        step: "Automated checklist creation"
+        tool: "GitHub Actions bot"
+        creates: "PR comment with principle checklist"
+
+      2:
+        step: "Developer self-review"
+        action: "Check off applicable items"
+
+      3:
+        step: "Peer review"
+        action: "Verify checklist and code quality"
+
+      4:
+        step: "Approval required"
+        rule: "At least one team member must approve"
+
+    checklist_items:
+      ui_code:
+        - "Design integrity maintained"
+        - "Accessibility verified"
+        - "All screen sizes supported"
+        - "Localization ready"
+
+      business_logic:
+        - "80% test coverage"
+        - "Unidirectional data flow"
+        - "Error handling complete"
+
+      all_code:
+        - "No build warnings"
+        - "No TODOs without tickets"
+        - "Dependencies documented"
+        - "Security verified"
+
+  design_review:
+    purpose: "Ensure design integrity"
+    when: "Before PR approval"
+    process:
+      - "Screenshot/video of implementation"
+      - "Comparison with Zeplin designs"
+      - "Designer sign-off for UI changes"
+    tools:
+      - "Zeplin Pop Out"
+      - "Screenshot testing"
+      - "Design system compliance"
+
+  security_review:
+    purpose: "Protect user data and client assets"
+    automated_checks:
+      - tool: "GitHub secret scanning"
+        prevents: ["api_keys", "passwords", "tokens"]
+
+      - tool: "Dependency scanning"
+        prevents: ["vulnerable_dependencies", "license_violations"]
+
+      - tool: "Custom scripts"
+        prevents: ["http_usage", "unsafe_storage"]
+
+    manual_checks:
+      - "Preflight checklist security section"
+      - "Penetration testing (periodic)"
+      - "Security audit (milestone-based)"
+
+  documentation_requirements:
+    purpose: "Knowledge transfer and maintenance"
+    automated_checks:
+      - "README completeness"
+      - "Public API documentation"
+      - "Code comment coverage"
+
+    manual_checks:
+      - "Clarity and accuracy"
+      - "Architecture decisions documented"
+      - "Setup instructions tested"
+
+preflight_checklist:
+  purpose: "Final verification before release"
+  sections:
+    legal_and_liability:
+      - "Fonts documented and licensed"
+      - "Icons documented and licensed"
+      - "Third-party libraries documented"
+      - "All accounts client-owned"
+      - "API keys client-owned"
+
+    accessibility:
+      - "TalkBack/VoiceOver tested"
+      - "Dynamic type tested"
+      - "Color contrast verified"
+      - "Touch targets adequate"
+
+    design:
+      - "All screens match designs"
+      - "All states implemented"
+      - "Animations smooth"
+      - "Error states handled"
+
+    security:
+      - "HTTPS everywhere"
+      - "No embedded secrets"
+      - "Authentication tested"
+      - "Data encryption verified"
+
+    quality:
+      - "No crashes"
+      - "Performance acceptable"
+      - "Memory usage reasonable"
+      - "Battery usage appropriate"
+
+    versioning:
+      - "Version number updated"
+      - "Release notes written"
+      - "Changelog updated"
+
+    fragile_things:
+      - "Third-party services tested"
+      - "Feature flags verified"
+      - "Migration tested"
+      - "Rollback plan exists"
+
+escalation_path:
+  minor_violations:
+    action: "Comment in PR"
+    resolution: "Fix before merge"
+
+  major_violations:
+    action: "Block PR"
+    resolution: "Requires rework"
+
+  systemic_issues:
+    action: "Team discussion"
+    resolution: "Process improvement"
+
+  client_impacting:
+    action: "Immediate notification"
+    resolution: "Hotfix process"
