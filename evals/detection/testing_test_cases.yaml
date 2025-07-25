@@ -1,0 +1,244 @@
+# Testing Detection Test Cases
+# Test cases to validate testing principle enforcement
+
+test_cases:
+  - id: "TEST-001"
+    name: "Business logic without tests"
+    category: "missing_tests"
+    code: |
+      class PaymentCalculator {
+        calculateTax(amount: number, rate: number): number {
+          if (amount <= 0) throw new Error('Invalid amount');
+          if (rate < 0 || rate > 1) throw new Error('Invalid rate');
+          return amount * rate;
+        }
+
+        calculateTotal(subtotal: number, taxRate: number, discountPercent: number = 0): number {
+          const discount = subtotal * (discountPercent / 100);
+          const discountedAmount = subtotal - discount;
+          const tax = this.calculateTax(discountedAmount, taxRate);
+          return discountedAmount + tax;
+        }
+      }
+    language: "typescript"
+    file_path: "src/services/PaymentCalculator.ts"
+    expected:
+      detected: true
+      rule: "missing_tests"
+      severity: "blocking"
+      message_contains: "Business logic without tests"
+      suggestion_contains: "PaymentCalculator.test.ts"
+
+  - id: "TEST-002"
+    name: "Low test coverage business logic"
+    category: "insufficient_coverage"
+    code: |
+      // UserValidator.ts - Business logic with complex edge cases
+      export class UserValidator {
+        validateEmail(email: string): boolean {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          return emailRegex.test(email);
+        }
+
+        validatePassword(password: string): ValidationResult {
+          const errors = [];
+          if (password.length < 8) errors.push('Password too short');
+          if (!/[A-Z]/.test(password)) errors.push('Missing uppercase letter');
+          if (!/[a-z]/.test(password)) errors.push('Missing lowercase letter');
+          if (!/\d/.test(password)) errors.push('Missing number');
+          if (!/[!@#$%^&*]/.test(password)) errors.push('Missing special character');
+          
+          return {
+            valid: errors.length === 0,
+            errors
+          };
+        }
+
+        validateAge(birthDate: Date): boolean {
+          const today = new Date();
+          const age = today.getFullYear() - birthDate.getFullYear();
+          const monthDiff = today.getMonth() - birthDate.getMonth();
+          
+          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            return age - 1 >= 13;
+          }
+          return age >= 13;
+        }
+      }
+
+      // Minimal test file
+      // UserValidator.test.ts
+      describe('UserValidator', () => {
+        test('validates email format', () => {
+          const validator = new UserValidator();
+          expect(validator.validateEmail('test@example.com')).toBe(true);
+        });
+      });
+    language: "typescript"
+    file_path: "src/services/UserValidator.ts"
+    coverage_report: {
+      lines_covered: 5,
+      lines_total: 25,
+      coverage_percent: 20
+    }
+    expected:
+      detected: true
+      rule: "insufficient_coverage"
+      severity: "blocking"
+      message_contains: "Test coverage below 80%"
+
+  - id: "TEST-003"
+    name: "Flaky test with timing issues"
+    category: "flaky_tests"
+    code: |
+      test('user data loads correctly', async () => {
+        const promise = loadUserData(userId);
+        
+        // Wait a bit for data to load
+        setTimeout(() => {
+          expect(mockApi.getUserData).toHaveBeenCalledWith(userId);
+        }, 100);
+        
+        const result = await promise;
+        expect(result.name).toBe('John Doe');
+      });
+    language: "typescript"
+    file_path: "src/services/UserService.test.ts"
+    expected:
+      detected: true
+      rule: "flaky_tests"
+      severity: "required"
+      message_contains: "Test uses setTimeout"
+      suggestion_contains: "await proper async operations"
+
+  - id: "TEST-004"
+    name: "Test testing implementation details"
+    category: "implementation_details"
+    code: |
+      test('component renders with correct internal state', () => {
+        const component = render(<ShoppingCart items={mockItems} />);
+        
+        // Testing internal implementation
+        expect(component.instance().state.isLoading).toBe(false);
+        expect(component.instance().calculateSubtotal()).toBe(100);
+        expect(component.find('.cart-item')).toHaveLength(3);
+      });
+    language: "typescript"
+    file_path: "src/components/ShoppingCart.test.tsx"
+    expected:
+      detected: true
+      rule: "implementation_details"
+      severity: "required"
+      message_contains: "Test accesses internal state"
+      suggestion_contains: "test user-visible behavior"
+
+  - id: "TEST-005"
+    name: "Good test with proper behavior testing"
+    category: "good_test_example"
+    code: |
+      test('displays error message when email is invalid', async () => {
+        render(<LoginForm onSubmit={mockSubmit} />);
+        
+        const emailInput = screen.getByLabelText(/email/i);
+        const submitButton = screen.getByRole('button', { name: /sign in/i });
+        
+        await user.type(emailInput, 'invalid-email');
+        await user.click(submitButton);
+        
+        expect(screen.getByText(/please enter a valid email/i)).toBeInTheDocument();
+        expect(mockSubmit).not.toHaveBeenCalled();
+      });
+    language: "typescript"
+    file_path: "src/components/LoginForm.test.tsx"
+    expected:
+      detected: false
+      reason: "Tests user behavior, not implementation details"
+
+  - id: "TEST-006"
+    name: "Android ViewModel without tests"
+    category: "missing_tests"
+    code: |
+      class UserProfileViewModel(
+        private val userRepository: UserRepository
+      ) : ViewModel() {
+        
+        private val _userProfile = MutableLiveData<UserProfile>()
+        val userProfile: LiveData<UserProfile> = _userProfile
+        
+        private val _loading = MutableLiveData<Boolean>()
+        val loading: LiveData<Boolean> = _loading
+        
+        fun loadUserProfile(userId: String) {
+          _loading.value = true
+          viewModelScope.launch {
+            try {
+              val profile = userRepository.getUserProfile(userId)
+              _userProfile.value = profile
+            } catch (e: Exception) {
+              // Handle error
+            } finally {
+              _loading.value = false
+            }
+          }
+        }
+        
+        fun updateProfile(profile: UserProfile) {
+          viewModelScope.launch {
+            userRepository.updateUserProfile(profile)
+            _userProfile.value = profile
+          }
+        }
+      }
+    language: "kotlin"
+    file_path: "app/src/main/java/com/example/viewmodel/UserProfileViewModel.kt"
+    expected:
+      detected: true
+      rule: "missing_tests"
+      severity: "blocking"
+      message_contains: "ViewModel business logic without tests"
+
+  - id: "TEST-007"
+    name: "Test with multiple assertions for different behaviors"
+    category: "multiple_assertions"
+    code: |
+      test('user service handles various scenarios', () => {
+        const service = new UserService();
+        
+        // Testing multiple different behaviors in one test
+        expect(service.validateEmail('test@example.com')).toBe(true);
+        expect(service.validatePassword('weak')).toBe(false);
+        expect(service.calculateAge(new Date('1990-01-01'))).toBeGreaterThan(30);
+        expect(service.formatName('john', 'doe')).toBe('John Doe');
+      });
+    language: "typescript"
+    file_path: "src/services/UserService.test.ts"
+    expected:
+      detected: true
+      rule: "multiple_assertions"
+      severity: "recommended"
+      message_contains: "Test should focus on one behavior"
+      suggestion_contains: "Split into separate tests"
+
+  - id: "TEST-008"
+    name: "Test without proper setup/teardown"
+    category: "test_isolation"
+    code: |
+      let globalUser;
+      
+      test('creates user successfully', () => {
+        globalUser = createUser({ name: 'John', email: 'john@example.com' });
+        expect(globalUser.id).toBeDefined();
+      });
+      
+      test('user has correct properties', () => {
+        expect(globalUser.name).toBe('John');
+        expect(globalUser.email).toBe('john@example.com');
+      });
+    language: "typescript"
+    file_path: "src/models/User.test.ts"
+    expected:
+      detected: true
+      rule: "test_isolation"
+      severity: "required"
+      message_contains: "Tests share state"
+      suggestion_contains: "Each test should be independent"

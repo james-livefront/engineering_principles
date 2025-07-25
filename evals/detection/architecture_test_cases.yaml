@@ -1,0 +1,364 @@
+# Architecture Detection Test Cases
+# Test cases to validate architecture principle enforcement
+
+test_cases:
+  - id: "ARCH-001"
+    name: "View directly modifying state"
+    category: "unidirectional_flow_violation"
+    code: |
+      function UserProfile({ user }) {
+        const [userData, setUserData] = useState(user);
+        
+        const handleEdit = () => {
+          // View component directly modifying state
+          setUserData({
+            ...userData,
+            lastModified: new Date()
+          });
+          
+          // And making API calls
+          fetch('/api/users', {
+            method: 'POST',
+            body: JSON.stringify(userData)
+          });
+        };
+        
+        return (
+          <div>
+            <h1>{userData.name}</h1>
+            <button onClick={handleEdit}>Edit</button>
+          </div>
+        );
+      }
+    language: "tsx"
+    expected:
+      detected: true
+      rule: "unidirectional_flow_violation"
+      severity: "blocking"
+      message_contains: "View should not directly modify state"
+      suggestion_contains: "dispatch actions"
+
+  - id: "ARCH-002"
+    name: "Business logic in UI component"
+    category: "separation_of_concerns"
+    code: |
+      function CheckoutForm({ cartItems }) {
+        const [total, setTotal] = useState(0);
+        
+        const calculateTotal = () => {
+          let subtotal = 0;
+          cartItems.forEach(item => {
+            subtotal += item.price * item.quantity;
+            
+            // Business logic in UI component
+            if (item.category === 'electronics') {
+              subtotal += item.price * 0.08; // Tax
+            }
+            
+            if (subtotal > 100) {
+              subtotal *= 0.95; // Discount
+            }
+          });
+          
+          setTotal(subtotal);
+        };
+        
+        return (
+          <form>
+            <p>Total: ${total}</p>
+            <button type="button" onClick={calculateTotal}>Calculate</button>
+          </form>
+        );
+      }
+    language: "tsx"
+    expected:
+      detected: true
+      rule: "separation_of_concerns"
+      severity: "blocking"
+      message_contains: "Business logic should be in business layer"
+      suggestion_contains: "move to service"
+
+  - id: "ARCH-003"
+    name: "Android Activity with business logic"
+    category: "separation_of_concerns"
+    code: |
+      class PaymentActivity : AppCompatActivity() {
+        
+        override fun onCreate(savedInstanceState: Bundle?) {
+          super.onCreate(savedInstanceState)
+          setContentView(R.layout.activity_payment)
+          
+          val payButton = findViewById<Button>(R.id.pay_button)
+          payButton.setOnClickListener {
+            processPayment()
+          }
+        }
+        
+        private fun processPayment() {
+          val amount = findViewById<EditText>(R.id.amount_input).text.toString().toDouble()
+          val cardNumber = findViewById<EditText>(R.id.card_input).text.toString()
+          
+          // Business logic in Activity
+          if (amount < 0) {
+            showError("Invalid amount")
+            return
+          }
+          
+          if (!isValidCard(cardNumber)) {
+            showError("Invalid card number")
+            return
+          }
+          
+          val fee = calculateProcessingFee(amount)
+          val total = amount + fee
+          
+          // Network call directly in Activity
+          val request = PaymentRequest(cardNumber, total)
+          PaymentService.processPayment(request) { result ->
+            if (result.isSuccess) {
+              showSuccess("Payment processed")
+            } else {
+              showError("Payment failed: ${result.error}")
+            }
+          }
+        }
+        
+        private fun isValidCard(cardNumber: String): Boolean {
+          // Luhn algorithm implementation in Activity
+          return cardNumber.length == 16 && cardNumber.all { it.isDigit() }
+        }
+        
+        private fun calculateProcessingFee(amount: Double): Double {
+          return when {
+            amount < 10 -> 0.50
+            amount < 100 -> amount * 0.025
+            else -> amount * 0.02
+          }
+        }
+      }
+    language: "kotlin"
+    file_path: "app/src/main/java/com/example/PaymentActivity.kt"
+    expected:
+      detected: true
+      rule: "separation_of_concerns"
+      severity: "blocking"
+      message_contains: "Business logic should be in ViewModel"
+
+  - id: "ARCH-004"
+    name: "Tight coupling between components"
+    category: "tight_coupling"
+    code: |
+      class EmailService {
+        private val smsService = SMSService()
+        private val pushService = PushNotificationService()
+        private val auditLogger = DatabaseAuditLogger()
+        
+        fun sendWelcomeEmail(user: User) {
+          val emailContent = buildWelcomeEmail(user)
+          sendEmail(user.email, emailContent)
+          
+          // Directly calling other services
+          smsService.sendWelcomeSMS(user.phoneNumber)
+          pushService.sendWelcomePush(user.deviceId, "Welcome!")
+          auditLogger.logEmailSent(user.id, "welcome")
+          
+          // Directly accessing database
+          val preferences = UserPreferencesDatabase.getUserPreferences(user.id)
+          if (preferences.marketingEmails) {
+            sendMarketingEmail(user)
+          }
+        }
+      }
+    language: "kotlin"
+    expected:
+      detected: true
+      rule: "tight_coupling"
+      severity: "required"
+      message_contains: "Tight coupling between services"
+      suggestion_contains: "dependency injection"
+
+  - id: "ARCH-005"
+    name: "Good architecture with proper separation"
+    category: "good_architecture_example"
+    code: |
+      // Proper separation with unidirectional flow
+      interface UserActions {
+        fun loadUser(userId: String)
+        fun updateUser(user: User)
+      }
+      
+      class UserViewModel(
+        private val userRepository: UserRepository
+      ) : ViewModel(), UserActions {
+        
+        private val _userState = MutableStateFlow<UserState>(UserState.Loading)
+        val userState: StateFlow<UserState> = _userState.asStateFlow()
+        
+        override fun loadUser(userId: String) {
+          viewModelScope.launch {
+            _userState.value = UserState.Loading
+            try {
+              val user = userRepository.getUser(userId)
+              _userState.value = UserState.Success(user)
+            } catch (e: Exception) {
+              _userState.value = UserState.Error(e.message ?: "Unknown error")
+            }
+          }
+        }
+        
+        override fun updateUser(user: User) {
+          viewModelScope.launch {
+            try {
+              userRepository.updateUser(user)
+              _userState.value = UserState.Success(user)
+            } catch (e: Exception) {
+              _userState.value = UserState.Error(e.message ?: "Update failed")
+            }
+          }
+        }
+      }
+      
+      @Composable
+      fun UserScreen(
+        viewModel: UserViewModel,
+        userId: String
+      ) {
+        val userState by viewModel.userState.collectAsState()
+        
+        LaunchedEffect(userId) {
+          viewModel.loadUser(userId)
+        }
+        
+        when (userState) {
+          is UserState.Loading -> LoadingIndicator()
+          is UserState.Success -> UserContent(
+            user = userState.user,
+            onUpdate = viewModel::updateUser
+          )
+          is UserState.Error -> ErrorMessage(userState.message)
+        }
+      }
+    language: "kotlin"
+    expected:
+      detected: false
+      reason: "Proper unidirectional data flow with clear separation"
+
+  - id: "ARCH-006"
+    name: "React component with mixed concerns"
+    category: "separation_of_concerns"
+    code: |
+      function ProductList({ categoryId }) {
+        const [products, setProducts] = useState([]);
+        const [loading, setLoading] = useState(false);
+        const [sortBy, setSortBy] = useState('name');
+        
+        useEffect(() => {
+          fetchProducts();
+        }, [categoryId]);
+        
+        const fetchProducts = async () => {
+          setLoading(true);
+          try {
+            // API call in component
+            const response = await fetch(`/api/products?category=${categoryId}`);
+            const data = await response.json();
+            
+            // Business logic in component
+            const processedData = data.map(product => ({
+              ...product,
+              discountedPrice: product.price * 0.9,
+              inStock: product.inventory > 0,
+              priority: product.featured ? 1 : 2
+            }));
+            
+            setProducts(processedData);
+          } catch (error) {
+            console.error('Failed to fetch products', error);
+          } finally {
+            setLoading(false);
+          }
+        };
+        
+        const handleSort = (field) => {
+          setSortBy(field);
+          
+          // Business logic in component
+          const sorted = [...products].sort((a, b) => {
+            if (field === 'price') {
+              return a.discountedPrice - b.discountedPrice;
+            }
+            return a[field].localeCompare(b[field]);
+          });
+          
+          setProducts(sorted);
+        };
+        
+        return (
+          <div>
+            <select onChange={(e) => handleSort(e.target.value)}>
+              <option value="name">Sort by Name</option>
+              <option value="price">Sort by Price</option>
+            </select>
+            {loading ? (
+              <p>Loading...</p>
+            ) : (
+              products.map(product => (
+                <div key={product.id}>
+                  <h3>{product.name}</h3>
+                  <p>${product.discountedPrice}</p>
+                </div>
+              ))
+            )}
+          </div>
+        );
+      }
+    language: "tsx"
+    expected:
+      detected: true
+      rule: "separation_of_concerns"
+      severity: "blocking"
+      message_contains: "Component contains business logic and API calls"
+
+  - id: "ARCH-007"
+    name: "iOS View Controller with proper MVVM"
+    category: "good_architecture_example"
+    code: |
+      class ProfileViewController: UIViewController {
+        @IBOutlet weak var nameLabel: UILabel!
+        @IBOutlet weak var emailLabel: UILabel!
+        @IBOutlet weak var editButton: UIButton!
+        
+        private let viewModel: ProfileViewModel
+        
+        init(viewModel: ProfileViewModel) {
+          self.viewModel = viewModel
+          super.init(nibName: nil, bundle: nil)
+        }
+        
+        override func viewDidLoad() {
+          super.viewDidLoad()
+          setupBindings()
+          viewModel.loadProfile()
+        }
+        
+        private func setupBindings() {
+          // View only binds to ViewModel state
+          viewModel.profile.observe(on: self) { [weak self] profile in
+            self?.nameLabel.text = profile?.name
+            self?.emailLabel.text = profile?.email
+          }
+          
+          viewModel.isLoading.observe(on: self) { [weak self] isLoading in
+            self?.editButton.isEnabled = !isLoading
+          }
+        }
+        
+        @IBAction func editButtonTapped(_ sender: UIButton) {
+          // View only sends actions to ViewModel
+          viewModel.editProfile()
+        }
+      }
+    language: "swift"
+    expected:
+      detected: false
+      reason: "Proper MVVM with clear separation between view and business logic"

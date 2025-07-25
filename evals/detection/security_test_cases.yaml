@@ -1,0 +1,216 @@
+# Security Detection Test Cases
+# Test cases to validate security rule detection
+
+test_cases:
+  - id: "SEC-001"
+    name: "Hardcoded API Key"
+    category: "secrets_in_code"
+    code: |
+      class ApiClient {
+        private val apiKey = "sk-1234567890abcdef1234567890abcdef"
+        private val baseUrl = "https://api.example.com"
+      }
+    language: "kotlin"
+    expected:
+      detected: true
+      rule: "hardcoded_secrets"
+      severity: "critical"
+      message_contains: "API key found"
+    
+  - id: "SEC-002"
+    name: "HTTP URL in production"
+    category: "insecure_urls"
+    code: |
+      const API_ENDPOINT = "http://api.production.com/v1/users"
+      
+      fetch(API_ENDPOINT)
+        .then(response => response.json())
+    language: "javascript"
+    expected:
+      detected: true
+      rule: "insecure_urls"
+      severity: "critical"
+      message_contains: "HTTP URL found"
+    
+  - id: "SEC-003"
+    name: "Password in SharedPreferences"
+    category: "insecure_storage"
+    code: |
+      fun saveUserCredentials(username: String, password: String) {
+        val prefs = getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+        prefs.edit()
+          .putString("username", username)
+          .putString("password", password)
+          .apply()
+      }
+    language: "kotlin"
+    expected:
+      detected: true
+      rule: "insecure_storage"
+      severity: "critical"
+      suggestion_contains: "EncryptedSharedPreferences"
+    
+  - id: "SEC-004"
+    name: "Localhost URL (should not flag)"
+    category: "insecure_urls"
+    code: |
+      const DEV_API = "http://localhost:3000/api"
+      const TEST_API = "http://127.0.0.1:8080/test"
+    language: "javascript"
+    expected:
+      detected: false
+      reason: "Localhost URLs are acceptable"
+    
+  - id: "SEC-005"
+    name: "Test file with example credentials"
+    category: "hardcoded_secrets"
+    code: |
+      // UserServiceTest.kt
+      class UserServiceTest {
+        @Test
+        fun testAuthentication() {
+          val testPassword = "test123"
+          val result = authService.login("testuser", testPassword)
+          assertTrue(result.isSuccess)
+        }
+      }
+    language: "kotlin"
+    file_path: "src/test/kotlin/UserServiceTest.kt"
+    expected:
+      detected: false
+      reason: "Test files may contain example credentials"
+    
+  - id: "SEC-006"
+    name: "Weak crypto algorithm"
+    category: "weak_crypto"
+    code: |
+      import java.security.MessageDigest
+      
+      fun hashPassword(password: String): String {
+        val md = MessageDigest.getInstance("MD5")
+        return md.digest(password.toByteArray()).toHexString()
+      }
+    language: "kotlin"
+    expected:
+      detected: true
+      rule: "weak_crypto"
+      severity: "blocking"
+      message_contains: "Weak hashing algorithm"
+      suggestion_contains: "SHA-256"
+    
+  - id: "SEC-007"
+    name: "Missing certificate pinning"
+    category: "certificate_pinning"
+    code: |
+      val client = OkHttpClient.Builder()
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .build()
+    language: "kotlin"
+    file_path: "src/main/kotlin/network/ApiClient.kt"
+    expected:
+      detected: true
+      rule: "certificate_pinning"
+      severity: "required"
+      message_contains: "No certificate pinning"
+    
+  - id: "SEC-008"
+    name: "localStorage with sensitive data"
+    category: "insecure_storage"
+    code: |
+      function saveAuthToken(token) {
+        localStorage.setItem('authToken', token);
+        localStorage.setItem('refreshToken', token.refresh);
+      }
+    language: "javascript"
+    expected:
+      detected: true
+      rule: "insecure_storage"
+      severity: "critical"
+      message_contains: "sensitive data in localStorage"
+    
+  - id: "SEC-009"
+    name: "Cleartext traffic enabled"
+    category: "insecure_urls"
+    code: |
+      <?xml version="1.0" encoding="utf-8"?>
+      <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+        <application
+          android:usesCleartextTraffic="true"
+          android:icon="@mipmap/ic_launcher">
+        </application>
+      </manifest>
+    language: "xml"
+    file_path: "AndroidManifest.xml"
+    expected:
+      detected: true
+      rule: "insecure_urls"
+      severity: "critical"
+      message_contains: "Cleartext traffic enabled"
+    
+  - id: "SEC-010"
+    name: "Complex case with multiple issues"
+    category: "multiple"
+    code: |
+      class PaymentService {
+        private val apiKey = "pk_live_123456789"
+        private val endpoint = "http://payments.example.com"
+        
+        fun processPayment(cardNumber: String, cvv: String) {
+          val hashedCard = MD5.hash(cardNumber)
+          
+          SharedPreferences.getInstance().edit()
+            .putString("last_card", hashedCard)
+            .apply()
+            
+          // Make payment request
+          HttpClient.post(endpoint, mapOf(
+            "api_key" to apiKey,
+            "card_hash" to hashedCard,
+            "cvv" to cvv
+          ))
+        }
+      }
+    language: "kotlin"
+    expected:
+      detected: true
+      violations:
+        - rule: "hardcoded_secrets"
+          count: 1
+        - rule: "insecure_urls"
+          count: 1
+        - rule: "weak_crypto"
+          count: 1
+        - rule: "insecure_storage"
+          count: 1
+      total_severity_score: "critical"
+
+evaluation_metrics:
+  detection_accuracy:
+    true_positives: "Correctly identified violations"
+    false_positives: "Incorrectly flagged valid code"
+    true_negatives: "Correctly ignored valid code"
+    false_negatives: "Missed actual violations"
+  
+  precision: "true_positives / (true_positives + false_positives)"
+  recall: "true_positives / (true_positives + false_negatives)"
+  f1_score: "2 * (precision * recall) / (precision + recall)"
+
+test_execution:
+  setup:
+    - "Load detection rules"
+    - "Configure context detection"
+    - "Set confidence thresholds"
+  
+  for_each_test:
+    - "Parse code sample"
+    - "Detect context (file type, path)"
+    - "Apply relevant rules"
+    - "Compare with expected results"
+    - "Record metrics"
+  
+  reporting:
+    - "Overall accuracy score"
+    - "Per-rule performance"
+    - "False positive analysis"
+    - "Missed violation analysis"

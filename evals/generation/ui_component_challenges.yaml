@@ -1,0 +1,210 @@
+# UI Component Generation Test Cases
+# Challenges for testing AI's ability to write accessible, principle-compliant UI code
+
+test_cases:
+  - id: "GEN-UI-001"
+    name: "Accessible Button Component"
+    platform: "web"
+    challenge: |
+      Create a reusable Button component that:
+      - Supports different sizes (small, medium, large)
+      - Has proper accessibility attributes
+      - Meets WCAG touch target requirements
+      - Includes loading state with accessible indicator
+      - Supports both text and icon-only buttons
+    requirements:
+      - accessibility: "All buttons must be screen reader accessible"
+      - design: "Match exact spacing and sizing requirements"
+      - testing: "Include unit tests for accessibility features"
+    expected_features:
+      accessibility:
+        - "aria-label or accessible text content"
+        - "Minimum 44px touch target"
+        - "Focus indicators"
+        - "Loading state announced to screen readers"
+        - "Disabled state handled properly"
+      code_quality:
+        - "TypeScript interfaces"
+        - "Proper prop validation"
+        - "Semantic HTML (button element)"
+      testing:
+        - "Tests for keyboard navigation"
+        - "Tests for screen reader announcements"
+        - "Tests for different states"
+
+  - id: "GEN-UI-002"
+    name: "Data Loading List Component"
+    platform: "web"
+    challenge: |
+      Create a List component that:
+      - Displays loading state while fetching data
+      - Shows empty state when no results
+      - Handles error states gracefully
+      - Supports infinite scroll or pagination
+      - Maintains accessibility during state changes
+    requirements:
+      - accessibility: "Loading states must be announced"
+      - architecture: "Unidirectional data flow"
+      - testing: "Cover all loading states"
+      - performance: "Virtualize for large lists"
+    expected_features:
+      accessibility:
+        - "aria-live regions for state changes"
+        - "Loading announcements"
+        - "Proper list semantics (ul/li or role='list')"
+      architecture:
+        - "Props-only data input"
+        - "Event callbacks for actions"
+        - "No internal API calls"
+      error_handling:
+        - "Graceful error display"
+        - "Retry mechanisms"
+
+  - id: "GEN-UI-003"
+    name: "Form Input with Validation"
+    platform: "web"
+    challenge: |
+      Create a FormField component that:
+      - Has proper label association
+      - Shows validation errors accessibly
+      - Supports different input types
+      - Handles required field indication
+      - Works with form libraries
+    requirements:
+      - accessibility: "WCAG 2.1 AA compliance"
+      - security: "No client-side validation only"
+      - localization: "Support RTL languages"
+    expected_features:
+      accessibility:
+        - "Proper label/input association"
+        - "Error announcements with aria-describedby"
+        - "Required field indication"
+        - "Field descriptions"
+      validation:
+        - "Server-side validation mention"
+        - "Clear error messages"
+        - "Field-level validation feedback"
+
+  - id: "GEN-UI-004"
+    name: "Android RecyclerView Item"
+    platform: "android"
+    challenge: |
+      Create a RecyclerView ViewHolder for displaying user profiles that:
+      - Shows avatar, name, and status
+      - Supports different status types (online, offline, away)
+      - Has proper accessibility support
+      - Includes click handling for navigation
+      - Optimizes image loading
+    requirements:
+      - accessibility: "Full TalkBack support"
+      - performance: "Efficient image loading"
+      - testing: "Unit tests for ViewHolder logic"
+    expected_features:
+      accessibility:
+        - "contentDescription for all images"
+        - "Semantic grouping of related content"
+        - "Custom accessibility actions if needed"
+      performance:
+        - "Image loading with placeholder/error states"
+        - "ViewHolder pattern optimization"
+      code_quality:
+        - "Kotlin data classes"
+        - "Proper resource management"
+
+  - id: "GEN-UI-005"
+    name: "iOS Table View Cell"
+    platform: "ios"
+    challenge: |
+      Create a UITableViewCell subclass for displaying notifications that:
+      - Shows notification icon, title, body, and timestamp
+      - Supports read/unread states
+      - Has swipe actions (mark read, delete)
+      - Includes proper accessibility support
+      - Uses Auto Layout constraints
+    requirements:
+      - accessibility: "VoiceOver navigation support"
+      - design: "Dynamic Type support"
+      - testing: "UI tests for swipe actions"
+    expected_features:
+      accessibility:
+        - "accessibilityLabel for complete content"
+        - "accessibilityActions for swipe actions"
+        - "Proper trait configuration"
+      layout:
+        - "Auto Layout constraints"
+        - "Dynamic Type support"
+        - "Safe Area handling"
+      interaction:
+        - "Swipe gesture recognition"
+        - "Visual feedback for actions"
+
+  - id: "GEN-UI-006"
+    name: "Complex Form Wizard"
+    platform: "web"
+    challenge: |
+      Create a multi-step form wizard that:
+      - Has progress indication
+      - Supports navigation between steps
+      - Validates each step before proceeding
+      - Saves draft progress
+      - Maintains accessibility focus management
+    requirements:
+      - accessibility: "Screen reader users can navigate efficiently"
+      - architecture: "State managed unidirectionally"
+      - testing: "Integration tests for full flow"
+      - security: "Validate all inputs server-side"
+    expected_features:
+      accessibility:
+        - "Step progress announced"
+        - "Focus management between steps"
+        - "Skip links for efficiency"
+        - "Error summary at step level"
+      state_management:
+        - "Centralized form state"
+        - "Immutable updates"
+        - "Clear action dispatching"
+      validation:
+        - "Client-side for UX, server-side for security"
+        - "Accessible error presentation"
+
+evaluation_criteria:
+  accessibility_compliance:
+    weight: 0.3
+    checks:
+      - "All interactive elements have accessible names"
+      - "Color is not the only indicator of state"
+      - "Keyboard navigation works completely"
+      - "Screen reader announcements are appropriate"
+      - "Touch targets meet minimum size requirements"
+  
+  code_quality:
+    weight: 0.25
+    checks:
+      - "Uses semantic HTML/proper platform controls"
+      - "TypeScript/proper typing where applicable"
+      - "Follows platform conventions"
+      - "Proper error handling"
+      - "No hardcoded strings"
+  
+  testing:
+    weight: 0.2
+    checks:
+      - "Unit tests for business logic"
+      - "Accessibility tests included"
+      - "Edge cases covered"
+      - "Integration tests for complex flows"
+  
+  architecture:
+    weight: 0.15
+    checks:
+      - "Unidirectional data flow"
+      - "Proper separation of concerns"
+      - "No tight coupling"
+      - "Reusable and composable"
+  
+  security:
+    weight: 0.1
+    checks:
+      - "No sensitive data in client state"
+      - "Server-side validation mentioned"
+      - "Secure defaults"

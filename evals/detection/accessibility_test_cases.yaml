@@ -1,0 +1,157 @@
+# Accessibility Detection Test Cases
+# Test cases to validate accessibility rule detection
+
+test_cases:
+  - id: "A11Y-001"
+    name: "Missing alt text on image"
+    category: "missing_alt_text"
+    code: |
+      <img src="/product-image.jpg" className="product-thumb" />
+    language: "tsx"
+    expected:
+      detected: true
+      rule: "missing_alt_text"
+      severity: "critical"
+      message_contains: "Missing alt text"
+      suggestion_contains: "Add descriptive alt attribute"
+
+  - id: "A11Y-002" 
+    name: "Button without accessible label"
+    category: "missing_labels"
+    code: |
+      <button onClick={handleClose}>
+        <X className="icon" />
+      </button>
+    language: "tsx"
+    expected:
+      detected: true
+      rule: "missing_labels"
+      severity: "critical"
+      message_contains: "Missing accessible label"
+      suggestion_contains: "aria-label"
+
+  - id: "A11Y-003"
+    name: "Android button without contentDescription"
+    category: "missing_content_description"
+    code: |
+      <ImageButton
+        android:id="@+id/delete_button"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@drawable/ic_delete" />
+    language: "xml"
+    expected:
+      detected: true
+      rule: "missing_content_description"
+      severity: "critical"
+      suggestion_contains: "android:contentDescription"
+
+  - id: "A11Y-004"
+    name: "iOS button without accessibility label"
+    category: "missing_accessibility_label"
+    code: |
+      let deleteButton = UIButton(type: .system)
+      deleteButton.setImage(UIImage(named: "trash"), for: .normal)
+      deleteButton.frame = CGRect(x: 0, y: 0, width: 44, height: 44)
+    language: "swift"
+    expected:
+      detected: true
+      rule: "missing_accessibility_label"
+      severity: "critical"
+      suggestion_contains: "accessibilityLabel"
+
+  - id: "A11Y-005"
+    name: "Touch target too small"
+    category: "touch_target_size"
+    code: |
+      .close-button {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+      }
+    language: "css"
+    expected:
+      detected: true
+      rule: "touch_target_size"
+      severity: "blocking"
+      message_contains: "Touch target too small"
+      suggestion_contains: "minimum 44px"
+
+  - id: "A11Y-006"
+    name: "Sufficient color contrast (should pass)"
+    category: "color_contrast"
+    code: |
+      .text-primary {
+        color: #1a1a1a;
+        background-color: #ffffff;
+      }
+    language: "css"
+    expected:
+      detected: false
+      reason: "High contrast ratio (16.75:1) meets WCAG AA"
+
+  - id: "A11Y-007"
+    name: "Poor color contrast"
+    category: "color_contrast"
+    code: |
+      .text-light {
+        color: #cccccc;
+        background-color: #ffffff;
+      }
+    language: "css"
+    expected:
+      detected: true
+      rule: "color_contrast"
+      severity: "required"
+      message_contains: "Insufficient color contrast"
+
+  - id: "A11Y-008"
+    name: "Form input without label"
+    category: "form_labels"
+    code: |
+      <input 
+        type="email" 
+        placeholder="Enter your email"
+        className="email-input" 
+      />
+    language: "tsx"
+    expected:
+      detected: true
+      rule: "form_labels"
+      severity: "critical"
+      message_contains: "Form input without label"
+      suggestion_contains: "associate with label element"
+
+  - id: "A11Y-009"
+    name: "Custom component with proper accessibility"
+    category: "comprehensive"
+    code: |
+      <button
+        aria-label="Close dialog"
+        onClick={onClose}
+        className="min-h-[44px] min-w-[44px] p-2"
+      >
+        <X aria-hidden="true" />
+      </button>
+    language: "tsx"
+    expected:
+      detected: false
+      reason: "Has aria-label, proper touch target size, decorative icon hidden"
+
+  - id: "A11Y-010"
+    name: "Non-semantic HTML for interactive element"
+    category: "semantic_html"
+    code: |
+      <div 
+        className="button-style" 
+        onClick={handleSubmit}
+      >
+        Submit Form
+      </div>
+    language: "tsx"
+    expected:
+      detected: true
+      rule: "semantic_html"
+      severity: "blocking"
+      message_contains: "Use semantic button element"
+      suggestion_contains: "<button>"
