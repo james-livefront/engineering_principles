@@ -1,0 +1,227 @@
+# Generation Guidance
+# How to write code that follows Livefront principles
+
+general_guidance:
+  mindset:
+    - "Think of yourself as a craftsperson"
+    - "Every line of code will be maintained by someone else"
+    - "The design is the spec - match it exactly"
+    - "If you can do it now, do it now"
+  
+  before_writing:
+    - "Check if similar code exists to maintain consistency"
+    - "Verify the design for the feature"
+    - "Consider accessibility from the start"
+    - "Plan for localization even if not immediate"
+
+principle_guidance:
+  accessibility:
+    approach: "Accessibility-first development"
+    checklist:
+      - "Can a screen reader user understand this?"
+      - "Can a keyboard-only user interact with this?"
+      - "Are touch targets large enough?"
+      - "Is color contrast sufficient?"
+      - "Does it work with dynamic font sizes?"
+    
+    android:
+      always:
+        - "Add contentDescription to all images"
+        - "Use string resources for all text"
+        - "Test with TalkBack enabled"
+        - "Ensure 48dp minimum touch targets"
+      
+      never:
+        - "Use color as the only indicator"
+        - "Create custom controls without accessibility"
+        - "Ignore importantForAccessibility"
+    
+    ios:
+      always:
+        - "Set accessibilityLabel for images"
+        - "Use Dynamic Type for fonts"
+        - "Test with VoiceOver enabled"
+        - "Ensure 44pt minimum touch targets"
+      
+      never:
+        - "Hard-code font sizes"
+        - "Skip accessibility traits"
+        - "Ignore adjustsFontForContentSizeCategory"
+    
+    web:
+      always:
+        - "Use semantic HTML elements"
+        - "Add alt text to images"
+        - "Label all form inputs"
+        - "Ensure keyboard navigation works"
+      
+      never:
+        - "Use divs for interactive elements"
+        - "Remove focus indicators without replacement"
+        - "Use placeholder as the only label"
+
+  testing:
+    approach: "Test-driven development when possible"
+    business_logic:
+      first: "Write the test that describes what you want"
+      then: "Write the minimum code to pass"
+      finally: "Refactor with confidence"
+    
+    coverage_guidelines:
+      must_test:
+        - "Data transformations"
+        - "Business rules"
+        - "State management"
+        - "Error handling"
+        - "Edge cases"
+      
+      optional:
+        - "UI layout code"
+        - "Simple getters/setters"
+        - "Platform-specific wrappers"
+    
+    test_quality:
+      good_test:
+        - "Tests one thing"
+        - "Has descriptive name"
+        - "Uses arrange-act-assert pattern"
+        - "Is deterministic"
+      
+      bad_test:
+        - "Tests implementation details"
+        - "Has multiple assertions for different behaviors"
+        - "Depends on external state"
+        - "Is flaky"
+
+  architecture:
+    unidirectional_flow:
+      principle: "Data flows in one direction only"
+      
+      android_mvvm:
+        view: "Observes ViewModel, sends actions"
+        viewmodel: "Holds state, processes actions"
+        repository: "Fetches and manages data"
+        
+      ios_coordinator:
+        view: "Displays state, sends actions"
+        presenter: "Transforms data for view"
+        interactor: "Contains business logic"
+        
+      react_redux:
+        component: "Renders state, dispatches actions"
+        reducer: "Pure function updating state"
+        actions: "Describe what happened"
+        selectors: "Derive data from state"
+    
+    separation_of_concerns:
+      ui_layer: "Only presentation logic"
+      business_layer: "Only business rules"
+      data_layer: "Only data access"
+
+  security:
+    secure_by_default:
+      - "Always use HTTPS"
+      - "Never commit secrets"
+      - "Encrypt sensitive data"
+      - "Validate all inputs"
+    
+    platform_specific:
+      android:
+        storage: "Use EncryptedSharedPreferences"
+        network: "Use certificate pinning"
+        permissions: "Request only what's needed"
+      
+      ios:
+        storage: "Use Keychain Services"
+        network: "Use URLSession with pinning"
+        permissions: "Explain why needed"
+      
+      web:
+        storage: "Don't store sensitive data client-side"
+        network: "Use secure cookies with flags"
+        csp: "Implement Content Security Policy"
+
+  code_style:
+    consistency: "Match existing code style"
+    readability: "Code is written once, read many times"
+    
+    naming:
+      variables: "Clear, descriptive names"
+      functions: "Verb phrases for actions"
+      classes: "Noun phrases for things"
+      
+    structure:
+      methods: "Short and focused"
+      classes: "Single responsibility"
+      files: "Logically organized"
+
+  dependencies:
+    evaluation:
+      questions:
+        - "Can we build this ourselves reasonably?"
+        - "Is it actively maintained?"
+        - "Does it align with our architecture?"
+        - "What's the total dependency tree?"
+      
+      prefer_building_when:
+        - "Core to our business logic"
+        - "Simple to implement"
+        - "Needs customization"
+        - "Has security implications"
+
+code_patterns:
+  defensive_programming:
+    null_safety:
+      kotlin: "Use nullable types and safe calls"
+      swift: "Use optionals and guard statements"
+      typescript: "Use strict null checks"
+    
+    error_handling:
+      principle: "Fail gracefully, log comprehensively"
+      android: "Use Result types or sealed classes"
+      ios: "Use Result types or throws"
+      web: "Use try-catch with proper error boundaries"
+
+  performance:
+    general:
+      - "Measure before optimizing"
+      - "Optimize the algorithm first"
+      - "Cache expensive operations"
+    
+    ui_specific:
+      - "Minimize layout recalculations"
+      - "Use virtualization for long lists"
+      - "Debounce user input"
+      - "Lazy load when appropriate"
+
+  maintainability:
+    documentation:
+      when: "Code isn't self-explanatory"
+      what: "Document why, not what"
+      where: "Close to the code it describes"
+    
+    refactoring:
+      when: "Before adding new features"
+      what: "Simplify without changing behavior"
+      how: "With comprehensive tests"
+
+common_mistakes:
+  accessibility:
+    - "Adding accessibility as an afterthought"
+    - "Testing only with mouse/touch"
+    - "Ignoring platform accessibility APIs"
+  
+  testing:
+    - "Testing implementation instead of behavior"
+    - "Writing tests after finding bugs"
+    - "Ignoring flaky tests"
+  
+  architecture:
+    - "Views directly modifying state"
+    - "Business logic in UI components"
+    - "Tight coupling between layers"
+  
+  security:
+    - "Trusting client-side validation"
+    - "Logging sensitive information"
+    - "Using weak encryption"
