@@ -214,47 +214,195 @@ Make executable: `chmod +x .git/hooks/pre-commit`
 
 ### VS Code Tasks Integration
 
-Create `.vscode/tasks.json`:
+VS Code tasks can be integrated **per-project** (recommended) or **globally** depending on your workflow needs.
+
+#### Per-Project Integration (Recommended)
+
+Add a `.vscode/tasks.json` file to each project that uses engineering principles. This approach provides platform-specific defaults and can be committed for team sharing.
+
+**For a Web Project:**
 
 ```json
 {
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Review with Principles",
+      "label": "Review with Engineering Principles",
       "type": "shell",
       "command": "python",
       "args": [
-        "principles_cli.py",
+        "/path/to/engineering_principles/principles_cli.py",
         "review",
-        "--platform", "${input:platform}",
+        "--platform", "web",
+        "--focus", "${input:focus}"
+      ],
+      "group": "build",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "Generate Code with Principles",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "/path/to/engineering_principles/principles_cli.py",
+        "generate",
+        "--platform", "web",
+        "--component", "${input:component}"
+      ]
+    }
+  ],
+  "inputs": [
+    {
+      "id": "focus",
+      "type": "pickString",
+      "description": "Focus areas for review",
+      "options": [
+        "security,accessibility",
+        "security,accessibility,testing",
+        "design,accessibility",
+        "performance,security",
+        "all"
+      ],
+      "default": "security,accessibility"
+    },
+    {
+      "id": "component",
+      "type": "pickString",
+      "description": "Component type to generate",
+      "options": ["ui", "business-logic", "data-layer"],
+      "default": "ui"
+    }
+  ]
+}
+```
+
+**For an Android Project:**
+
+```json
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Review with Engineering Principles",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "/path/to/engineering_principles/principles_cli.py",
+        "review",
+        "--platform", "android",
         "--focus", "${input:focus}"
       ]
     }
   ],
   "inputs": [
     {
-      "id": "platform",
-      "type": "pickString",
-      "description": "Select platform",
-      "options": ["android", "ios", "web"]
-    },
-    {
       "id": "focus",
-      "type": "promptString",
-      "description": "Focus areas (comma-separated)",
-      "default": "security,accessibility"
+      "type": "pickString",
+      "description": "Focus areas for Android review",
+      "options": [
+        "security,accessibility",
+        "security,accessibility,testing",
+        "design,accessibility",
+        "performance,security"
+      ],
+      "default": "security,accessibility,testing"
     }
   ]
 }
 ```
 
-**Usage:**
+#### Global/Multi-Project Integration
 
-1. Command Palette: `Cmd+Shift+P` (Mac) or `Ctrl+Shift+P` (Windows/Linux)
-2. Type "Tasks: Run Task" and select "Review with Principles"
-3. Choose platform and focus areas
-4. View results in integrated terminal
+For teams working across multiple platforms, create a VS Code multi-root workspace:
+
+**`.code-workspace` file:**
+
+```json
+{
+  "folders": [
+    { "name": "Android App", "path": "./my-android-app" },
+    { "name": "iOS App", "path": "./my-ios-app" },
+    { "name": "Web App", "path": "./my-web-app" },
+    { "name": "Engineering Principles", "path": "./engineering_principles" }
+  ],
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Review with Principles (Any Platform)",
+        "type": "shell",
+        "command": "python",
+        "args": [
+          "${workspaceFolder:Engineering Principles}/principles_cli.py",
+          "review",
+          "--platform", "${input:platform}",
+          "--focus", "${input:focus}"
+        ],
+        "options": {
+          "cwd": "${input:projectPath}"
+        }
+      }
+    ],
+    "inputs": [
+      {
+        "id": "platform",
+        "type": "pickString",
+        "description": "Select platform",
+        "options": ["android", "ios", "web"]
+      },
+      {
+        "id": "focus",
+        "type": "promptString",
+        "description": "Focus areas (comma-separated)",
+        "default": "security,accessibility"
+      },
+      {
+        "id": "projectPath",
+        "type": "pickString",
+        "description": "Select project to review",
+        "options": [
+          "${workspaceFolder:Android App}",
+          "${workspaceFolder:iOS App}",
+          "${workspaceFolder:Web App}"
+        ]
+      }
+    ]
+  }
+}
+```
+
+#### Usage
+
+**Per-Project Tasks:**
+
+1. Open Command Palette: `Cmd+Shift+P` (Mac) or `Ctrl+Shift+P` (Windows/Linux)
+2. Type "Tasks: Run Task"
+3. Select "Review with Engineering Principles"
+4. Choose focus areas from predefined options
+5. View generated prompt in integrated terminal
+6. Copy prompt to use with AI tools
+
+**Integration with AI Tools:**
+
+```bash
+# Use task output with GitHub Copilot or other AI tools
+# The task generates a prompt that you can paste into:
+# - GitHub Copilot Chat
+# - ChatGPT
+# - Claude
+# - Your preferred AI assistant
+```
+
+**Pro Tips:**
+
+- Commit `.vscode/tasks.json` to share with your team
+- Customize `focus` options for your project's specific needs
+- Use `"group": "build"` to make tasks appear in the build menu
+- Set up keybindings for frequently used tasks
 
 ### Shell Aliases
 
@@ -403,7 +551,7 @@ report = evaluator.evaluate_detection_prompt(
 
 #### Example Evaluation Report
 
-```
+```markdown
 # Engineering Principles Evaluation Report
 
 ## Overall Results
