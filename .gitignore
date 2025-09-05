@@ -6,7 +6,16 @@ __pycache__/
 .Python
 env/
 venv/
+.venv/
 .env
+
+# Testing & Linting
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
 
 # IDE
 .vscode/
@@ -24,3 +33,16 @@ Thumbs.db
 .cache/
 output/
 temp/
+
+# Evaluation reports (keep only committed baseline)
+*_enhanced.md
+default_enhanced.md
+enhanced_results.md
+baseline_*.md
+llm_enhanced_*.md
+
+# Config files (keep only the main ones)
+sample_config.yaml
+test_config.json
+*_config.yaml
+!eval_config.yaml
