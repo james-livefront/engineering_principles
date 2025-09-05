@@ -1,0 +1,24 @@
+defaults:
+  max_tokens: 1000
+  provider: openai
+  temperature: 0.1
+providers:
+  anthropic:
+    api_key: sk-ant-your-anthropic-key-here
+    default_model: claude-3-5-sonnet-20241022
+  groq:
+    api_key: gsk-your-groq-key-here
+    default_model: llama-3.1-70b-versatile
+  local:
+    api_key: optional-if-needed
+    base_url: http://localhost:8000/v1
+    default_model: local-model
+  ollama:
+    base_url: http://localhost:11434/v1
+    default_model: llama3.1
+  openai:
+    api_key: your-openai-api-key-here
+    default_model: gpt-4o
+  together:
+    api_key: your-together-key-here
+    default_model: meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo
