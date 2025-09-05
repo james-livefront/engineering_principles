@@ -1,0 +1,254 @@
+# Code Quality Detection Rules
+# Patterns to identify code quality issues
+
+rules:
+  todo_without_ticket:
+    description: "Detect TODOs without linked tickets"
+    severity: "blocking"
+    patterns:
+      - regex: "(?i)//\\s*(TODO|FIXME|HACK|XXX)(?!.*(?:JIRA|#\\d+|ticket|issue))"
+        message: "TODO found without linked ticket"
+        confidence: "high"
+
+      - regex: "(?i)/\\*\\s*(TODO|FIXME|HACK|XXX)(?!.*(?:JIRA|#\\d+|ticket|issue)).*\\*/"
+        message: "TODO comment without linked ticket"
+        confidence: "high"
+
+      - regex: "(?i)#\\s*(TODO|FIXME|HACK|XXX)(?!.*(?:JIRA|#\\d+|ticket|issue))"
+        message: "TODO comment without linked ticket"
+        confidence: "high"
+        file_types: ["*.py", "*.sh"]
+
+  hardcoded_strings:
+    description: "Detect hardcoded user-facing strings"
+    severity: "required"
+    patterns:
+      - regex: "text\\s*[:=]\\s*[\"'][A-Z][^\"']{10,}[\"']"
+        message: "Hardcoded user-facing text should be externalized"
+        confidence: "medium"
+        file_types: ["*.tsx", "*.jsx", "*.kt", "*.swift"]
+
+      - regex: "setText\\s*\\([\"'][A-Z][^\"']{5,}[\"']\\)"
+        message: "Hardcoded setText string should use string resources"
+        confidence: "high"
+        file_types: ["*.kt", "*.java"]
+
+      - regex: "\\.localizedString\\s*=\\s*[\"'][^\"']+[\"']"
+        message: "Hardcoded localized string should use NSLocalizedString"
+        confidence: "high"
+        file_types: ["*.swift"]
+
+  build_warnings_sources:
+    description: "Detect code patterns that commonly cause build warnings"
+    severity: "blocking"
+    patterns:
+      - regex: "var\\s+\\w+(?!.*=)"
+        message: "Uninitialized variable may cause warnings"
+        confidence: "low"
+        file_types: ["*.swift", "*.kt"]
+
+      - regex: "import\\s+\\w+(?!.*\\.)"
+        message: "Unused import may cause warnings"
+        confidence: "low"
+
+      - regex: "@SuppressWarnings\\s*\\([^)]+\\)"
+        message: "Warning suppression should be justified with comment"
+        confidence: "medium"
+        file_types: ["*.kt", "*.java"]
+
+  commented_out_code:
+    description: "Detect commented-out code blocks"
+    severity: "required"
+    patterns:
+      - regex: "//\\s*(function|class|if|for|while)\\s+\\w+"
+        message: "Commented-out code should be removed"
+        confidence: "medium"
+
+      - regex: "/\\*[\\s\\S]*?(function|class|if|for|while)[\\s\\S]*?\\*/"
+        message: "Large commented-out code block should be removed"
+        confidence: "high"
+
+      - regex: "#\\s*(def|class|if|for|while)\\s+\\w+"
+        message: "Commented-out Python code should be removed"
+        confidence: "medium"
+        file_types: ["*.py"]
+
+  console_logs_production:
+    description: "Detect console logs in production code"
+    severity: "required"
+    patterns:
+      - regex: "console\\.(log|debug|info|warn|error)\\s*\\("
+        message: "Console logs should be removed from production code"
+        confidence: "high"
+        file_types: ["*.ts", "*.tsx", "*.js", "*.jsx"]
+        exclude_patterns:
+          - ".*\\.test\\."
+          - ".*\\.spec\\."
+
+      - regex: "print\\s*\\(|println\\s*\\("
+        message: "Print statements should be removed from production code"
+        confidence: "high"
+        file_types: ["*.kt", "*.swift"]
+        exclude_patterns:
+          - ".*Test\\."
+          - ".*Tests\\."
+
+  magic_numbers:
+    description: "Detect magic numbers that should be constants"
+    severity: "recommended"
+    patterns:
+      - regex: "\\b(?:100|200|300|400|500|600|700|800|900|1000)\\b(?!\\s*[;,})])"
+        message: "Magic number should be extracted to named constant"
+        confidence: "low"
+        exclude_patterns:
+          - "HTTP status codes: 200, 404, etc."
+
+      - regex: "\\*\\s*(?:24|60|365|1000|1024)\\b"
+        message: "Time/size calculation magic number should be constant"
+        confidence: "medium"
+
+  complex_methods:
+    description: "Detect overly complex methods"
+    severity: "recommended"
+    patterns:
+      - regex: "function\\s+\\w+.*\\{[\\s\\S]{500,}?\\}"
+        message: "Function is very long, consider breaking into smaller functions"
+        confidence: "low"
+        file_types: ["*.ts", "*.js", "*.tsx", "*.jsx"]
+
+      - regex: "fun\\s+\\w+.*\\{[\\s\\S]{500,}?\\}"
+        message: "Function is very long, consider breaking into smaller functions"
+        confidence: "low"
+        file_types: ["*.kt"]
+
+      - regex: "func\\s+\\w+.*\\{[\\s\\S]{500,}?\\}"
+        message: "Function is very long, consider breaking into smaller functions"
+        confidence: "low"
+        file_types: ["*.swift"]
+
+  deep_nesting:
+    description: "Detect deeply nested code"
+    severity: "recommended"
+    patterns:
+      - regex: "\\{[^{}]*\\{[^{}]*\\{[^{}]*\\{[^{}]*\\{"
+        message: "Deep nesting (5+ levels) reduces readability"
+        confidence: "medium"
+
+      - regex: "if\\s*\\([^)]+\\)\\s*\\{[^{}]*if\\s*\\([^)]+\\)\\s*\\{[^{}]*if\\s*\\([^)]+\\)\\s*\\{"
+        message: "Deeply nested if statements, consider early returns or guard clauses"
+        confidence: "high"
+
+platform_specific:
+  android:
+    kotlin_quality:
+      - regex: "!!"
+        message: "Avoid !! operator, use safe calls or explicit null checks"
+        severity: "recommended"
+        file_types: ["*.kt"]
+
+      - regex: "lateinit\\s+var\\s+\\w+:\\s*\\w+(?!.*=)"
+        message: "lateinit var should be justified, consider lazy initialization"
+        severity: "recommended"
+        file_types: ["*.kt"]
+
+  ios:
+    swift_quality:
+      - regex: "as!"
+        message: "Avoid force casting, use conditional casting (as?)"
+        severity: "recommended"
+        file_types: ["*.swift"]
+
+      - regex: "\\w+!"
+        message: "Implicitly unwrapped optional should be justified"
+        severity: "recommended"
+        file_types: ["*.swift"]
+
+  web:
+    javascript_quality:
+      - regex: "var\\s+\\w+"
+        message: "Use let or const instead of var"
+        severity: "required"
+        file_types: ["*.js", "*.jsx"]
+
+      - regex: "==(?!=)"
+        message: "Use strict equality (===) instead of loose equality (==)"
+        severity: "required"
+        file_types: ["*.js", "*.jsx", "*.ts", "*.tsx"]
+
+dependency_quality:
+  description: "Detect dependency-related quality issues"
+  patterns:
+    - regex: "require\\s*\\([\"'][^\"']+[\"']\\)(?!\\s*;)"
+      message: "Missing semicolon after require statement"
+      confidence: "high"
+      file_types: ["*.js"]
+
+    - regex: "import\\s+.*\\s+from\\s+[\"'][^\"']*\\.\\..*[\"']"
+      message: "Relative imports with .. suggest potential coupling"
+      confidence: "low"
+
+error_handling_quality:
+  description: "Detect poor error handling patterns"
+  patterns:
+    - regex: "catch\\s*\\([^)]*\\)\\s*\\{\\s*\\}"
+      message: "Empty catch block silently ignores errors"
+      confidence: "high"
+      severity: "required"
+
+    - regex: "catch\\s*\\([^)]*\\)\\s*\\{[^}]*console\\.log[^}]*\\}"
+      message: "Catching errors only to log them, consider proper error handling"
+      confidence: "medium"
+      severity: "recommended"
+
+    - regex: "throw\\s+new\\s+Error\\s*\\(\\s*[\"'][\"']\\s*\\)"
+      message: "Throwing error with empty message"
+      confidence: "high"
+      severity: "required"
+
+detection_helpers:
+  file_context:
+    exclude_paths:
+      - "*/test/*"
+      - "*/mock/*"
+      - "*/example/*"
+      - "*/sample/*"
+      - "*/node_modules/*"
+
+    production_files:
+      - "*/src/*"
+      - "*/app/*"
+      - "*/lib/*"
+
+  confidence_modifiers:
+    increase_confidence:
+      - "In production source files"
+      - "In main application code"
+      - "Clear violation patterns"
+
+    decrease_confidence:
+      - "In test files"
+      - "In configuration files"
+      - "In build scripts"
+
+reporting:
+  format:
+    title: "Code Quality Issue: {rule_name}"
+    body: |
+      **Severity**: {severity}
+      **File**: {file_path}
+      **Line**: {line_number}
+      **Issue**: {message}
+
+      **Quality Impact**: This affects code maintainability and developer experience.
+
+      **Suggested Fix**:
+      {suggestion}
+
+      **Code**:
+      ```{language}
+      {code_snippet}
+      ```
+
+  aggregation:
+    group_by: ["severity", "rule_name"]
+    summary: "Found {count} code quality issues: {blocking} blocking, {required} required"

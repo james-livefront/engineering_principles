@@ -1,0 +1,209 @@
+# Testing Detection Rules
+# Patterns to identify testing violations and gaps
+
+rules:
+  missing_business_logic_tests:
+    description: "Detect business logic without corresponding tests"
+    severity: "blocking"
+    patterns:
+      - regex: "class\\s+(\\w*Service|\\w*Repository|\\w*Manager|\\w*Handler)\\w*"
+        message: "Business logic class found, verify corresponding test file exists"
+        confidence: "high"
+        file_types: ["*.kt", "*.swift", "*.ts", "*.js"]
+        requires_test_file: true
+
+      - regex: "function\\s+(calculate|process|validate|transform|parse)\\w*"
+        message: "Business logic function should have unit tests"
+        confidence: "medium"
+        file_types: ["*.kt", "*.swift", "*.ts", "*.js"]
+
+  low_test_coverage:
+    description: "Detect potentially low test coverage patterns"
+    severity: "blocking"
+    patterns:
+      - regex: "if\\s*\\([^)]+\\)\\s*\\{[^}]*throw\\s+"
+        message: "Error condition should be tested"
+        confidence: "medium"
+
+      - regex: "catch\\s*\\([^)]+\\)\\s*\\{[^}]*\\}"
+        message: "Error handling block should be tested"
+        confidence: "medium"
+
+      - regex: "switch\\s*\\([^)]+\\)\\s*\\{([^}]*case[^}]*){3,}"
+        message: "Complex switch statement should have comprehensive tests"
+        confidence: "high"
+
+  flaky_test_patterns:
+    description: "Detect potentially flaky test patterns"
+    severity: "required"
+    patterns:
+      - regex: "setTimeout\\s*\\(|sleep\\s*\\(|Thread\\.sleep"
+        message: "Hard-coded delays in tests can cause flakiness"
+        confidence: "high"
+        file_types: ["*test*", "*spec*"]
+
+      - regex: "Math\\.random\\(\\)|Random\\(\\)"
+        message: "Random values in tests can cause non-deterministic failures"
+        confidence: "high"
+        file_types: ["*test*", "*spec*"]
+
+      - regex: "new\\s+Date\\(\\)|Date\\.now\\(\\)|System\\.currentTimeMillis"
+        message: "Current time in tests can cause timing-dependent failures"
+        confidence: "medium"
+        file_types: ["*test*", "*spec*"]
+
+  missing_edge_case_tests:
+    description: "Detect missing edge case test scenarios"
+    severity: "recommended"
+    patterns:
+      - regex: "\\bnull\\b|\\bundefined\\b|\\bnil\\b"
+        message: "Null/undefined handling should be tested"
+        confidence: "low"
+
+      - regex: "\\bempty\\b.*\\barray\\b|\\[\\s*\\]"
+        message: "Empty array handling should be tested"
+        confidence: "low"
+
+      - regex: "\\bzero\\b|\\b0\\b.*\\blength\\b"
+        message: "Zero/empty cases should be tested"
+        confidence: "low"
+
+  poor_test_structure:
+    description: "Detect poor test structure and practices"
+    severity: "recommended"
+    patterns:
+      - regex: "it\\s*\\([\"'][^\"']{50,}[\"']"
+        message: "Test description too long, consider breaking into smaller tests"
+        confidence: "medium"
+        file_types: ["*test*", "*spec*"]
+
+      - regex: "expect\\([^)]+\\)\\.\\w+\\([^)]*\\);.*expect\\([^)]+\\)\\.\\w+\\([^)]*\\);"
+        message: "Multiple assertions in one test, consider separate test cases"
+        confidence: "medium"
+        file_types: ["*test*", "*spec*"]
+
+      - regex: "beforeEach\\s*\\([^)]*\\)\\s*\\{[\\s\\S]{200,}\\}"
+        message: "Complex beforeEach setup, consider test-specific setup"
+        confidence: "low"
+        file_types: ["*test*", "*spec*"]
+
+platform_specific:
+  android:
+    missing_test_patterns:
+      - regex: "@Test(?!\\s+fun\\s+test)"
+        message: "Test method should start with 'test' prefix"
+        file_types: ["*Test.kt"]
+        severity: "required"
+
+      - regex: "class\\s+\\w*Test\\w*\\s*\\{"
+        missing_pattern: "@RunWith"
+        message: "Test class missing @RunWith annotation"
+        severity: "recommended"
+
+    ui_test_issues:
+      - regex: "onView\\([^)]+\\)\\.perform\\([^)]+\\)\\.check\\("
+        message: "UI test performing action and checking in same line, consider separate steps"
+        file_types: ["*Test.kt"]
+        severity: "recommended"
+
+  ios:
+    test_structure:
+      - regex: "func\\s+test\\w+\\(\\)\\s*\\{[\\s\\S]{300,}\\}"
+        message: "Test method too long, consider breaking into smaller tests"
+        file_types: ["*Test.swift", "*Tests.swift"]
+        severity: "recommended"
+
+      - regex: "XCTAssert\\w+\\([^)]+\\);.*XCTAssert\\w+\\([^)]+\\);"
+        message: "Multiple XCTAssert in one test, consider separate test methods"
+        file_types: ["*Test.swift", "*Tests.swift"]
+        severity: "recommended"
+
+  web:
+    react_testing:
+      - regex: "render\\s*\\(<\\s*\\w+Component"
+        missing_pattern: "screen\\.|getBy|findBy|queryBy"
+        message: "Component rendered but no testing queries found"
+        file_types: ["*.test.tsx", "*.test.jsx", "*.spec.tsx", "*.spec.jsx"]
+        severity: "required"
+
+      - regex: "fireEvent\\."
+        message: "Consider using userEvent instead of fireEvent for better user simulation"
+        file_types: ["*.test.tsx", "*.test.jsx", "*.spec.tsx", "*.spec.jsx"]
+        severity: "recommended"
+
+coverage_patterns:
+  insufficient_coverage:
+    description: "Detect patterns that often indicate insufficient test coverage"
+    patterns:
+      - regex: "private\\s+\\w+\\s+\\w+.*\\{[\\s\\S]*?if\\s*\\("
+        message: "Private methods with conditional logic should be tested indirectly"
+        confidence: "low"
+
+      - regex: "static\\s+\\w+\\s+\\w+.*\\{[\\s\\S]*?return"
+        message: "Static utility methods should have unit tests"
+        confidence: "medium"
+
+test_quality:
+  description: "Patterns that indicate test quality issues"
+  patterns:
+    - regex: "expect\\(true\\)\\.toBe\\(true\\)|XCTAssertTrue\\(true\\)|assert\\(true\\)"
+      message: "Meaningless assertion always passes"
+      confidence: "high"
+      file_types: ["*test*", "*spec*"]
+      severity: "required"
+
+    - regex: "xit\\s*\\(|it\\.skip\\s*\\(|@Ignore"
+      message: "Disabled tests should be removed or fixed"
+      confidence: "high"
+      file_types: ["*test*", "*spec*"]
+      severity: "required"
+
+    - regex: "console\\.log\\s*\\(|print\\s*\\(|NSLog\\s*\\("
+      message: "Debug statements in tests should be removed"
+      confidence: "medium"
+      file_types: ["*test*", "*spec*"]
+      severity: "recommended"
+
+detection_helpers:
+  file_context:
+    test_files:
+      - "*test*"
+      - "*spec*"
+      - "*Test*"
+      - "*Tests*"
+
+    business_logic_files:
+      - "*Service*"
+      - "*Repository*"
+      - "*Manager*"
+      - "*Handler*"
+      - "*Util*"
+      - "*Helper*"
+
+  coverage_thresholds:
+    business_logic: 80
+    ui_components: 40
+    utility_functions: 90
+
+reporting:
+  format:
+    title: "Testing Violation: {rule_name}"
+    body: |
+      **Severity**: {severity}
+      **File**: {file_path}
+      **Line**: {line_number}
+      **Issue**: {message}
+
+      **Testing Impact**: This affects code reliability and maintainability.
+
+      **Suggested Action**:
+      {suggestion}
+
+      **Code**:
+      ```{language}
+      {code_snippet}
+      ```
+
+  aggregation:
+    group_by: ["severity", "rule_name"]
+    summary: "Found {count} testing issues: {blocking} blocking, {required} required"

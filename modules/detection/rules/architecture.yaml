@@ -1,0 +1,174 @@
+# Architecture Detection Rules
+# Patterns to identify architecture violations
+
+rules:
+  bidirectional_data_flow:
+    description: "Detect bidirectional data flow violations"
+    severity: "blocking"
+    patterns:
+      - regex: "\\.(setState|dispatch)\\s*\\([^)]*\\).*\\.(setState|dispatch)"
+        message: "Multiple state changes in single method suggest bidirectional flow"
+        confidence: "medium"
+        file_types: ["*.ts", "*.tsx", "*.js", "*.jsx", "*.kt", "*.swift"]
+
+      - regex: "view\\s*\\.\\s*(state|data)\\s*=\\s*"
+        message: "View directly modifying state violates unidirectional flow"
+        confidence: "high"
+        file_types: ["*.ts", "*.tsx", "*.js", "*.jsx", "*.kt", "*.swift"]
+
+      - regex: "this\\s*\\.\\s*props\\s*\\.\\s*\\w+\\s*=\\s*"
+        message: "Mutating props violates unidirectional data flow"
+        confidence: "high"
+        file_types: ["*.ts", "*.tsx", "*.js", "*.jsx"]
+
+  view_modifying_state:
+    description: "Detect views directly modifying state"
+    severity: "blocking"
+    patterns:
+      - regex: "class\\s+\\w*View\\w*.*\\{[\\s\\S]*?\\bstate\\s*\\[.*?\\]\\s*="
+        message: "View class directly setting state, should emit events instead"
+        confidence: "high"
+        file_types: ["*.kt", "*.swift"]
+
+      - regex: "function\\s+\\w*Component.*\\{[\\s\\S]*?\\.dispatch\\("
+        message: "Component directly dispatching, should use callbacks"
+        confidence: "medium"
+        file_types: ["*.ts", "*.tsx", "*.js", "*.jsx"]
+
+  tight_coupling:
+    description: "Detect tight coupling between modules"
+    severity: "required"
+    patterns:
+      - regex: "import.*\\.\\..*\\.\\..*\\.\\..*"
+        message: "Deep relative imports suggest tight coupling"
+        confidence: "medium"
+
+      - regex: "import.*\\/domain\\/.*\\/data\\/"
+        message: "Domain layer importing from data layer violates architecture"
+        confidence: "high"
+
+      - regex: "import.*\\/presentation\\/.*\\/domain\\/"
+        message: "Presentation importing from domain should use dependency injection"
+        confidence: "medium"
+
+  missing_abstraction:
+    description: "Detect missing abstraction opportunities"
+    severity: "recommended"
+    patterns:
+      - regex: "(HttpClient|OkHttp|URLSession)\\s+\\w+\\s*=\\s*new"
+        message: "Direct instantiation of HTTP client, consider using repository pattern"
+        confidence: "medium"
+        file_types: ["*.kt", "*.swift", "*.ts", "*.js"]
+
+      - regex: "SharedPreferences\\s+\\w+\\s*=\\s*getSharedPreferences"
+        message: "Direct SharedPreferences usage, consider storage abstraction"
+        confidence: "medium"
+        file_types: ["*.kt"]
+
+  unhandled_errors:
+    description: "Detect missing error handling in architecture layers"
+    severity: "required"
+    patterns:
+      - regex: "\\.subscribe\\([^,}]*\\)"
+        message: "RxJava subscription without error handling"
+        confidence: "high"
+        file_types: ["*.kt", "*.java"]
+
+      - regex: "async\\s+function\\s+\\w+\\([^)]*\\)\\s*\\{[^}]*await[^}]*\\}"
+        message: "Async function without try-catch for error handling"
+        confidence: "medium"
+        file_types: ["*.ts", "*.js"]
+
+      - regex: "fetch\\([^)]+\\)(?!\\.catch)"
+        message: "Fetch without error handling"
+        confidence: "high"
+        file_types: ["*.ts", "*.tsx", "*.js", "*.jsx"]
+
+android_specific:
+  mvvm_violations:
+    - regex: "class\\s+\\w*Activity\\w*.*\\{[\\s\\S]*?\\bapi\\w*\\."
+      message: "Activity directly calling API, should use ViewModel"
+      file_types: ["*.kt"]
+      severity: "blocking"
+
+    - regex: "class\\s+\\w*Fragment\\w*.*\\{[\\s\\S]*?\\brepository\\w*\\."
+      message: "Fragment directly using repository, should use ViewModel"
+      file_types: ["*.kt"]
+      severity: "blocking"
+
+ios_specific:
+  mvc_violations:
+    - regex: "class\\s+\\w*ViewController\\w*.*\\{[\\s\\S]*?URLSession"
+      message: "ViewController directly using URLSession, should use service layer"
+      file_types: ["*.swift"]
+      severity: "blocking"
+
+    - regex: "@IBAction\\s+func\\s+\\w+.*\\{[\\s\\S]*?\\bapi\\w*\\."
+      message: "IBAction directly calling API, should use presenter or coordinator"
+      file_types: ["*.swift"]
+      severity: "blocking"
+
+web_specific:
+  react_violations:
+    - regex: "function\\s+\\w*Component.*\\{[\\s\\S]*?useEffect\\([^,]*,\\s*\\[\\]\\)[\\s\\S]*?fetch\\("
+      message: "Component fetching data directly, should use custom hook or service"
+      file_types: ["*.tsx", "*.jsx"]
+      severity: "required"
+
+    - regex: "class\\s+\\w*Component.*\\{[\\s\\S]*?componentDidMount\\(\\)[\\s\\S]*?\\bapi\\w*\\."
+      message: "Component calling API in lifecycle method, should use Redux action"
+      file_types: ["*.tsx", "*.jsx"]
+      severity: "required"
+
+detection_helpers:
+  file_context:
+    description: "Architecture-specific file patterns"
+    architecture_files:
+      - "*Repository*"
+      - "*Service*"
+      - "*ViewModel*"
+      - "*Presenter*"
+      - "*Coordinator*"
+      - "*Store*"
+      - "*Reducer*"
+
+    view_files:
+      - "*Activity*"
+      - "*Fragment*"
+      - "*ViewController*"
+      - "*Component*"
+      - "*View*"
+
+  confidence_modifiers:
+    increase_confidence:
+      - "In architecture-critical files"
+      - "State management patterns"
+      - "Data flow violations"
+
+    decrease_confidence:
+      - "In test files"
+      - "In example/sample code"
+      - "In prototype code"
+
+reporting:
+  format:
+    title: "Architecture Violation: {rule_name}"
+    body: |
+      **Severity**: {severity}
+      **File**: {file_path}
+      **Line**: {line_number}
+      **Issue**: {message}
+
+      **Architecture Impact**: This violates unidirectional data flow principles and makes code harder to test and maintain.
+
+      **Suggested Fix**:
+      {suggestion}
+
+      **Code**:
+      ```{language}
+      {code_snippet}
+      ```
+
+  aggregation:
+    group_by: ["severity", "rule_name"]
+    summary: "Found {count} architecture issues: {blocking} blocking, {required} required"
