@@ -85,21 +85,21 @@ enforcement_tools:
 
       - name: "lint"
         checks:
-          - "Code style compliance"
-          - "No TODOs without tickets"
-          - "No hardcoded strings"
+          - "Run platform linters (ESLint, SwiftLint, ktlint) and verify zero violations"
+          - "Scan for TODO, FIXME, HACK patterns and verify each links to valid ticket"
+          - "Detect hardcoded strings using regex: [\"'][A-Za-z\\s]{3,}[\"'] in UI components"
 
       - name: "test"
         checks:
-          - "All tests pass"
-          - "Coverage thresholds met"
-          - "No flaky tests"
+          - "Execute all unit and integration tests with zero failures or skips"
+          - "Verify code coverage ≥80% for business logic modules (excluding UI/styling)"
+          - "Detect flaky tests by running suite 3x and flagging inconsistent results"
 
       - name: "security"
         checks:
-          - "No secrets in code"
-          - "Dependency vulnerabilities"
-          - "HTTPS enforcement"
+          - "Scan for secrets using patterns: API keys ≥16 chars, passwords, tokens in source files"
+          - "Run dependency vulnerability scanner and verify zero high/critical CVEs"
+          - "Verify all HTTP URLs use HTTPS (except localhost/127.0.0.1 for development)"
 
       - name: "deploy"
         checks:
@@ -129,21 +129,21 @@ enforcement_tools:
 
     checklist_items:
       ui_code:
-        - "Design integrity maintained"
-        - "Accessibility verified"
-        - "All screen sizes supported"
-        - "Localization ready"
+        - "Compare implementation screenshots against Zeplin designs for pixel-perfect accuracy"
+        - "Test with TalkBack/VoiceOver, verify aria-labels and semantic HTML are present"
+        - "Validate responsive layout on mobile (375px), tablet (768px), desktop (1200px)"
+        - "Check all user-facing text uses externalized strings, no hardcoded text"
 
       business_logic:
-        - "80% test coverage"
-        - "Unidirectional data flow"
-        - "Error handling complete"
+        - "Run test coverage report and verify ≥80% for all business logic classes"
+        - "Verify state mutations only occur in designated classes (stores/reducers/view-models)"
+        - "Test error scenarios: network failures, invalid inputs, edge cases with proper handling"
 
       all_code:
-        - "No build warnings"
-        - "No TODOs without tickets"
-        - "Dependencies documented"
-        - "Security verified"
+        - "Run build and confirm zero warnings in compilation output"
+        - "Search for TODO/FIXME/HACK patterns and verify each links to valid ticket"
+        - "Confirm all new dependencies are documented in README with license info"
+        - "Verify no secrets, API keys, or hardcoded credentials in source files"
 
   design_review:
     purpose: "Ensure design integrity"

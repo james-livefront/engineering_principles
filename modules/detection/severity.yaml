@@ -4,7 +4,8 @@
 severity_levels:
   critical:
     description: "Violations that could cause immediate harm to users or expose sensitive data"
-    action: "Block merge immediately"
+    action: "Block merge immediately and notify security team"
+    llm_instructions: "Flag as CRITICAL violation, provide specific fix with before/after code examples, explain security impact"
     examples:
       - "Hardcoded API keys or secrets"
       - "Missing accessibility for core features"
@@ -16,6 +17,7 @@ severity_levels:
   blocking:
     description: "Violations that break core engineering standards"
     action: "Block merge until resolved"
+    llm_instructions: "Mark as BLOCKING issue, provide clear steps to fix, reference specific coding standards or guidelines"
     examples:
       - "Test coverage below 80% for business logic"
       - "Build warnings in new code"
@@ -27,6 +29,7 @@ severity_levels:
   required:
     description: "Standards that must be met but may have justified exceptions"
     action: "Require explanation or fix"
+    llm_instructions: "Flag as REQUIRED fix, suggest solution, allow developer to provide justification if fix isn't applicable"
     examples:
       - "Missing localization support"
       - "Design deviations without designer approval"
@@ -38,6 +41,7 @@ severity_levels:
   recommended:
     description: "Best practices that improve code quality"
     action: "Suggest improvement"
+    llm_instructions: "Suggest as improvement opportunity, provide example of better approach, explain benefits but don't block merge"
     examples:
       - "Complex methods that could be simplified"
       - "Missing unit tests for UI code"
@@ -49,6 +53,7 @@ severity_levels:
   informational:
     description: "Observations that may be useful but don't require action"
     action: "Comment only"
+    llm_instructions: "Provide informational note, share knowledge or alternative approaches, no action required from developer"
     examples:
       - "Performance optimization opportunities"
       - "Alternative implementation suggestions"

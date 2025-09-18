@@ -18,8 +18,9 @@ principles:
         - semantic_html
         - wcag_2_1_compliance
     enforcement:
-      automated: ["linter_rules", "ci_checks"]
-      manual: ["code_review_checklist", "design_audit"]
+      automated_checks: "Verify accessibility attributes are present: aria-labels, role attributes, semantic HTML elements"
+      manual_review: "Check contrast ratios meet WCAG 2.1 AA standards, verify keyboard navigation works, test with screen readers"
+      severity_escalation: "Flag missing accessibility as CRITICAL for user-facing features, REQUIRED for internal tools"
 
   code_consistency:
     category: "Craft Excellence"
@@ -34,8 +35,9 @@ principles:
       - "We have a style guide for every platform"
       - "Style is checked manually during code review"
     enforcement:
-      automated: ["platform_linters", "prettier", "format_on_save"]
-      manual: ["code_review", "style_guide_reference"]
+      automated_checks: "Verify consistent naming conventions, indentation, and formatting match platform standards"
+      manual_review: "Check for consistent patterns across similar code, ensure readability and maintainability"
+      severity_escalation: "Flag inconsistencies as RECOMMENDED improvements, escalate to REQUIRED if impacting team productivity"
 
   zero_todos:
     category: "Technical Debt Prevention"
@@ -49,8 +51,9 @@ principles:
         yes: "Do it now"
         no: "Create ticket and link in comment"
     enforcement:
-      automated: ["grep_for_todos", "pr_checks"]
-      manual: ["code_review"]
+      automated_checks: "Search for patterns: TODO, FIXME, HACK, XXX in source files, verify each has linked ticket"
+      manual_review: "Check that any remaining work items have corresponding tickets, ensure TODO removal process is followed"
+      severity_escalation: "Flag TODOs without tickets as BLOCKING, flag excessive TODOs as technical debt requiring immediate attention"
 
   security:
     category: "User Protection"
@@ -66,8 +69,9 @@ principles:
       android: "Encrypted SharedPreferences"
       web: "No local storage of sensitive data"
     enforcement:
-      automated: ["secret_scanning", "https_checks"]
-      manual: ["preflight_checklist", "security_review"]
+      automated_checks: "Scan for hardcoded secrets, API keys, passwords using regex patterns; verify HTTPS usage; check for encrypted storage"
+      manual_review: "Validate authentication flows, verify sensitive data handling, check certificate pinning implementation"
+      severity_escalation: "Flag security violations as CRITICAL (hardcoded secrets, HTTP usage), BLOCKING (weak crypto), REQUIRED (missing encryption)"
 
   unidirectional_data_flow:
     category: "Architecture"
@@ -82,8 +86,9 @@ principles:
       ios: "Coordinator pattern with state containers"
       web: "React + Redux"
     enforcement:
-      automated: ["architecture_linters"]
-      manual: ["architecture_review", "code_review"]
+      automated_checks: "Verify state mutations happen only in designated classes (stores, view models, reducers)"
+      manual_review: "Check that views only read state and emit events, validate data flow follows unidirectional patterns"
+      severity_escalation: "Flag bidirectional data flow as BLOCKING, direct state mutations in views as REQUIRED fix"
 
   testing:
     category: "Reliability"
@@ -101,8 +106,9 @@ principles:
       required: ["business_logic", "data_transformations", "state_management"]
       optional: ["ui_code", "animations", "styling"]
     enforcement:
-      automated: ["coverage_reports", "ci_gates"]
-      manual: ["test_review", "meaningful_test_check"]
+      automated_checks: "Calculate test coverage for business logic modules, verify CI fails on coverage below 80%"
+      manual_review: "Validate test quality and meaningfulness, check that tests cover edge cases and error conditions"
+      severity_escalation: "Flag coverage below 80% as BLOCKING for business logic, missing tests as REQUIRED for critical paths"
 
   flexible_layout:
     category: "User Experience"
@@ -118,8 +124,9 @@ principles:
       ios: "Layout in code—no nibs"
       web: "Responsive layouts with CSS Grid/Flexbox"
     enforcement:
-      automated: ["layout_linters"]
-      manual: ["design_review", "device_testing"]
+      automated_checks: "Verify responsive design patterns, check for hardcoded dimensions, validate support for different screen densities"
+      manual_review: "Test layouts on different screen sizes and orientations, verify accessibility with large fonts"
+      severity_escalation: "Flag layout breaks as BLOCKING for supported devices, hardcoded dimensions as REQUIRED fix"
 
   continuous_integration:
     category: "Process"
@@ -136,8 +143,9 @@ principles:
       - coverage_reports
       - automated_deployment
     enforcement:
-      automated: ["ci_pipeline", "merge_blocks"]
-      manual: ["ci_configuration_review"]
+      automated_checks: "Verify CI pipeline runs all required checks (build, test, lint), ensure merge protection rules are active"
+      manual_review: "Validate CI configuration covers all quality gates, check deployment automation is working correctly"
+      severity_escalation: "Flag CI failures as BLOCKING for merges, missing CI steps as REQUIRED infrastructure fixes"
 
   code_reviews:
     category: "Knowledge Sharing"
@@ -152,8 +160,9 @@ principles:
       - peer_approval
       - ci_passing
     enforcement:
-      automated: ["pr_checks", "merge_protection"]
-      manual: ["reviewer_diligence", "checklist_verification"]
+      automated_checks: "Verify PR has required approvals, ensure all CI checks pass before merge, validate checklist completion"
+      manual_review: "Conduct thorough code review focusing on logic, security, and maintainability, provide constructive feedback"
+      severity_escalation: "Flag unreviewed code as BLOCKING for merge, insufficient review feedback as REQUIRED process violation"
 
   zero_build_warnings:
     category: "Code Quality"
@@ -163,8 +172,9 @@ principles:
       - "We suppress irrelevant warnings with explanation"
       - "Keep codebase warning-free to spot new issues"
     enforcement:
-      automated: ["warning_reports", "ci_checks"]
-      manual: ["warning_review", "suppression_justification"]
+      automated_checks: "Monitor build output for warnings, track warning trends over time, fail builds on new warnings"
+      manual_review: "Review and justify any warning suppressions, ensure warnings are addressed or properly documented"
+      severity_escalation: "Flag new build warnings as BLOCKING for merge, excessive warnings as REQUIRED cleanup task"
 
   design_integrity:
     category: "Craft Excellence"
@@ -179,8 +189,9 @@ principles:
       - "Design review process"
       - "Pixel-perfect validation"
     enforcement:
-      automated: ["screenshot_testing"]
-      manual: ["design_review", "designer_sign_off"]
+      automated_checks: "Compare implementation screenshots against design specs, validate pixel-perfect accuracy where specified"
+      manual_review: "Review implementation against designs with design team, ensure visual consistency across platform"
+      severity_escalation: "Flag design deviations as REQUIRED fixes, missing designer approval as BLOCKING for UI changes"
 
   localization:
     category: "Global Reach"
@@ -195,8 +206,9 @@ principles:
       - rtl_support_ready
       - dynamic_layouts
     enforcement:
-      automated: ["hardcoded_string_detection"]
-      manual: ["i18n_review", "string_extraction_check"]
+      automated_checks: "Scan for hardcoded strings, dates, currencies in UI code; verify externalized string usage"
+      manual_review: "Check that all user-facing text is localization-ready, validate RTL layout support where needed"
+      severity_escalation: "Flag hardcoded user-facing strings as REQUIRED fixes, missing localization prep as RECOMMENDED improvements"
 
   minimal_dependencies:
     category: "Risk Management"
@@ -211,8 +223,9 @@ principles:
       - "All libraries documented in README with purpose and license"
       - "Build vs buy analysis for each dependency"
     enforcement:
-      automated: ["dependency_scanning", "license_checks"]
-      manual: ["dependency_review", "approval_process"]
+      automated_checks: "Monitor dependency additions, validate against approved library lists, check license compatibility"
+      manual_review: "Review new dependencies against build vs buy analysis, ensure VP Technology and client approval obtained"
+      severity_escalation: "Flag unapproved dependencies as BLOCKING for merge, missing documentation as REQUIRED fixes"
 
   compatibility:
     category: "Platform Support"
@@ -227,8 +240,9 @@ principles:
       - browser_matrix
       - api_levels
     enforcement:
-      automated: ["compatibility_tests"]
-      manual: ["compatibility_review", "device_testing"]
+      automated_checks: "Run compatibility tests across supported OS versions and device types, validate API usage"
+      manual_review: "Test on physical devices representing supported configurations, verify graceful degradation"
+      severity_escalation: "Flag compatibility breaks as BLOCKING for supported platforms, deprecation warnings as REQUIRED updates"
 
   documentation:
     category: "Knowledge Transfer"
@@ -246,5 +260,6 @@ principles:
       - automation_details
       - ci_setup
     enforcement:
-      automated: ["documentation_linters"]
-      manual: ["documentation_review", "readme_checklist"]
+      automated_checks: "Verify README completeness, check for missing inline documentation on public APIs"
+      manual_review: "Review documentation accuracy and clarity, ensure new features are documented"
+      severity_escalation: "Flag missing README sections as REQUIRED for new projects, undocumented APIs as RECOMMENDED improvements"
