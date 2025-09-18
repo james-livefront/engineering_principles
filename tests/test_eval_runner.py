@@ -5,6 +5,7 @@ Unit tests for eval_runner module.
 import json
 import tempfile
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 import pytest  # noqa: F401
@@ -39,7 +40,14 @@ class TestAPIEvaluator:
 
     def test_init_openai_not_available(self) -> None:
         """Test APIEvaluator initialization fails when OpenAI is not available."""
-        with patch("eval_runner.openai", None):
+
+        # Mock the import to raise ImportError when openai is imported
+        def mock_import(name: str, *args: Any, **kwargs: Any) -> Any:
+            if name == "openai":
+                raise ImportError("No module named 'openai'")
+            return __import__(name, *args, **kwargs)
+
+        with patch("builtins.__import__", side_effect=mock_import):
             with pytest.raises(ImportError, match="OpenAI package is required"):
                 eval_runner.APIEvaluator(
                     provider="openai",

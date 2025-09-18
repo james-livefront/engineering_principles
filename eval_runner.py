@@ -295,9 +295,7 @@ class PromptEvaluator:
                 "compliance_score": 0.0,
             }
 
-    def _parse_detection_response(
-        self, ai_response: str, test_case: TestCase
-    ) -> DetectionResponse:
+    def _parse_detection_response(self, ai_response: str, test_case: TestCase) -> DetectionResponse:
         """Parse AI response to determine if violation was detected"""
         response_lower = ai_response.lower()
 
@@ -326,9 +324,7 @@ class PromptEvaluator:
         return {
             "found": detected,
             "confidence": confidence,
-            "message": (
-                ai_response[:200] + "..." if len(ai_response) > 200 else ai_response
-            ),
+            "message": (ai_response[:200] + "..." if len(ai_response) > 200 else ai_response),
         }
 
     def _evaluate_generated_code(
@@ -345,11 +341,11 @@ class PromptEvaluator:
         eval_prompt = f"""
         Evaluate this generated code against these requirements:
 
-        Challenge: {challenge['challenge']}
+        Challenge: {challenge["challenge"]}
         Expected Features: {json.dumps(expected_features, indent=2)}
 
         Generated Code:
-        ```{challenge.get('platform', 'typescript')}
+        ```{challenge.get("platform", "typescript")}
         {generated_code}
         ```
 
@@ -396,9 +392,7 @@ class PromptEvaluator:
             else 0
         )
         f1_score = (
-            2 * (precision * recall) / (precision + recall)
-            if (precision + recall) > 0
-            else 0
+            2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
         )
 
         failed_tests = [r for r in results if not r.correct]
@@ -414,13 +408,11 @@ class PromptEvaluator:
             failed_tests=failed_tests,
         )
 
-    def generate_report(
-        self, report: EvaluationReport, output_file: str | None = None
-    ) -> str:
+    def generate_report(self, report: EvaluationReport, output_file: str | None = None) -> str:
         """Generate a formatted evaluation report"""
         report_text = f"""
 # Engineering Principles Evaluation Report
-Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 
 ## Overall Results
 - Total Tests: {report.total_tests}
@@ -492,9 +484,7 @@ class APIEvaluator:
         try:
             import openai  # noqa: F401
         except ImportError:
-            raise ImportError(
-                "OpenAI package is required for API-based evaluation"
-            ) from None
+            raise ImportError("OpenAI package is required for API-based evaluation") from None
 
         # Check for API key
         if provider == "openai" and not os.getenv("OPENAI_API_KEY"):
@@ -531,9 +521,7 @@ def mock_ai_generator(prompt: str) -> str:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Evaluate engineering principles prompts"
-    )
+    parser = argparse.ArgumentParser(description="Evaluate engineering principles prompts")
     parser.add_argument(
         "--mode",
         choices=["detection", "generation", "both"],
@@ -558,9 +546,7 @@ def main() -> None:
         with open(args.prompt_file) as f:
             test_prompt = f.read()
     else:
-        test_prompt = (
-            "You are a code reviewer. Find violations of engineering principles."
-        )
+        test_prompt = "You are a code reviewer. Find violations of engineering principles."
 
     print("Evaluating prompt effectiveness...")
     print(f"Mode: {args.mode}")
@@ -580,10 +566,7 @@ def main() -> None:
             test_prompt, mock_ai_generator, mock_ai_evaluator, args.categories
         )
 
-        print(
-            f"Generation Results: {results['average_compliance']:.2%} "
-            "average compliance"
-        )
+        print(f"Generation Results: {results['average_compliance']:.2%} average compliance")
 
 
 if __name__ == "__main__":
