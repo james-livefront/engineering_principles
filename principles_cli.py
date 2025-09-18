@@ -52,10 +52,28 @@ class PrinciplesCLI:
             output.append("**Principles:** Unable to parse principles structure")
             return "\n".join(output)
 
+        # Map focus areas to relevant principles
+        focus_to_principles = {
+            "security": ["security"],
+            "accessibility": ["accessibility"],
+            "testing": ["testing"],
+            "architecture": ["unidirectional_data_flow", "minimal_dependencies"],
+            "performance": ["flexible_layout", "minimal_dependencies"],
+            "code_style": ["code_consistency", "zero_todos", "zero_build_warnings"],
+            "localization": ["localization"],
+            "documentation": ["documentation"],
+            "design": ["design_integrity"],
+            "reviews": ["code_reviews"],
+            "ci": ["continuous_integration"],
+        }
+
         # Filter principles if focus areas specified
         if focus_areas:
+            relevant_principles = set()
+            for area in focus_areas:
+                relevant_principles.update(focus_to_principles.get(area, [area]))
             filtered_principles = {
-                k: v for k, v in principles.items() if k in focus_areas
+                k: v for k, v in principles.items() if k in relevant_principles
             }
         else:
             filtered_principles = principles
@@ -101,14 +119,31 @@ class PrinciplesCLI:
 
         if "approved_dependencies" in platform_config:
             output.append("**Approved Dependencies:**")
-            for dep in platform_config["approved_dependencies"]:
-                output.append(f"- {dep}")
+            for category, deps in platform_config["approved_dependencies"].items():
+                if isinstance(deps, list):
+                    for dep_info in deps:
+                        if isinstance(dep_info, dict) and "name" in dep_info:
+                            # Detailed format (e.g., Android deps with name/purpose/version)
+                            purpose = dep_info.get("purpose", "")
+                            version = dep_info.get("version", "")
+                            desc = f" - {purpose}" if purpose else ""
+                            ver = f" v{version}" if version else ""
+                            output.append(
+                                f"- {dep_info['name']}{ver}{desc} ({category})"
+                            )
+                        else:
+                            # Simple string format (e.g., iOS frameworks)
+                            output.append(f"- {dep_info} ({category})")
             output.append("")
 
         if "tools" in platform_config:
             output.append("**Required Tools:**")
-            for tool in platform_config["tools"]:
-                output.append(f"- {tool}")
+            for category, tools in platform_config["tools"].items():
+                if isinstance(tools, list):
+                    for tool in tools:
+                        output.append(f"- {tool} ({category})")
+                else:
+                    output.append(f"- {tools} ({category})")
             output.append("")
 
         return "\n".join(output)
@@ -120,26 +155,109 @@ class PrinciplesCLI:
         for category, category_rules in rules.items():
             output.append(f"### {category.title()} Rules")
 
-            if "rules" in category_rules:
-                for rule in category_rules["rules"]:
-                    output.append(f"**{rule['name']}** (Severity: {rule['severity']})")
-                    output.append(f"- {rule['description']}")
+            if isinstance(category_rules, dict) and "rules" in category_rules:
+                # Handle nested structure
+                actual_rules = category_rules["rules"]
+            else:
+                # Handle direct structure
+                actual_rules = category_rules
 
-                    if "patterns" in rule:
-                        output.append("- Detection patterns:")
-                        for pattern in rule["patterns"][:3]:  # Show first 3 patterns
-                            output.append(f"  - `{pattern}`")
+            if isinstance(actual_rules, dict):
+                for rule_name, rule_data in actual_rules.items():
+                    if isinstance(rule_data, dict):
+                        severity = rule_data.get("severity", "unknown")
+                        description = rule_data.get("description", "No description")
 
-                    if "fix_suggestions" in rule:
                         output.append(
-                            f"- Fix: {rule['fix_suggestions'].get('description', 'No fix info')}"
+                            f"**{rule_name.replace('_', ' ').title()}** (Severity: {severity})"
                         )
+                        output.append(f"- {description}")
 
-                    output.append("")
+                        # Show patterns if available (handle both direct and platform-specific patterns)
+                        patterns_to_show = []
+
+                        if "patterns" in rule_data:
+                            patterns = rule_data["patterns"]
+                            if isinstance(patterns, list):
+                                patterns_to_show.extend(patterns)
+                            elif isinstance(patterns, dict):
+                                for pattern_name, pattern_data in patterns.items():
+                                    if (
+                                        isinstance(pattern_data, dict)
+                                        and "regex" in pattern_data
+                                    ):
+                                        patterns_to_show.append(pattern_data)
+
+                        # Also check for platform-specific patterns
+                        for platform_key in [
+                            "android_patterns",
+                            "ios_patterns",
+                            "web_patterns",
+                            "patterns",
+                        ]:
+                            if platform_key in rule_data and isinstance(
+                                rule_data[platform_key], dict
+                            ):
+                                for pattern_name, pattern_data in rule_data[
+                                    platform_key
+                                ].items():
+                                    if (
+                                        isinstance(pattern_data, dict)
+                                        and "regex" in pattern_data
+                                    ):
+                                        patterns_to_show.append(pattern_data)
+
+                        if patterns_to_show:
+                            output.append("- Detection patterns:")
+                            for pattern in patterns_to_show[
+                                :3
+                            ]:  # Show first 3 patterns
+                                if isinstance(pattern, dict) and "regex" in pattern:
+                                    output.append(f"  - `{pattern['regex']}`")
+                                    if "message" in pattern:
+                                        output.append(f"    - {pattern['message']}")
+                                else:
+                                    output.append(f"  - `{pattern}`")
+
+                        output.append("")
 
             output.append("")
 
         return "\n".join(output)
+
+    def format_severity_levels(self, severity: dict[str, Any]) -> str:
+        """Format severity levels for prompt inclusion"""
+        output = []
+
+        # Standard severity levels in order
+        severity_order = ["critical", "blocking", "required", "recommended"]
+
+        for level in severity_order:
+            if level in severity:
+                level_data = severity[level]
+                if isinstance(level_data, dict):
+                    description = level_data.get(
+                        "description", f"{level.title()} violations"
+                    )
+                    action = level_data.get("action", "See documentation")
+                    examples = level_data.get("examples", [])
+
+                    output.append(f"- **{level.title()}**: {description}")
+                    output.append(f"  - Action: {action}")
+
+                    if examples:
+                        output.append("  - Examples:")
+                        for example in examples[:3]:  # Show first 3 examples
+                            output.append(f"    - {example}")
+                else:
+                    output.append(f"- **{level.title()}**: {level_data}")
+
+        return "\n".join(output)
+
+    def get_platform_title(self, platform: str) -> str:
+        """Get properly capitalized platform name"""
+        platform_titles = {"ios": "iOS", "android": "Android", "web": "Web"}
+        return platform_titles.get(platform.lower(), platform.title())
 
     def generate_review_prompt(self, platform: str, focus_areas: list[str]) -> str:
         """Generate code review prompt"""
@@ -170,15 +288,17 @@ class PrinciplesCLI:
                 )  # Handle nested structure
 
         # Generate prompt
-        prompt = f"""# Code Review Assistant for {platform.title()}
+        platform_title = self.get_platform_title(platform)
+        prompt = f"""# Code Review Assistant for {platform_title}
 
-You are an expert code reviewer for Livefront's engineering standards. Review code against these principles and provide actionable feedback.
+You are an expert code reviewer for Livefront's engineering standards. Review code against these \
+principles and provide actionable feedback.
 
 ## Core Principles
 
 {self.format_principles(principles, focus_areas)}
 
-## Platform Requirements ({platform.title()})
+## Platform Requirements ({platform_title})
 
 {self.format_platform_requirements(platforms.get(platform, {}))}
 
@@ -188,10 +308,7 @@ You are an expert code reviewer for Livefront's engineering standards. Review co
 
 ## Severity Levels
 
-- **Critical**: {', '.join(severity.get('critical', []))} - Blocks merge immediately
-- **Blocking**: {', '.join(severity.get('blocking', []))} - Must fix before merge
-- **Required**: {', '.join(severity.get('required', []))} - Should fix before merge
-- **Recommended**: {', '.join(severity.get('recommended', []))} - Improve when possible
+{self.format_severity_levels(severity)}
 
 ## Instructions
 
@@ -201,9 +318,10 @@ When reviewing code:
 2. **Classify severity** using the levels above
 3. **Provide specific fixes** with before/after examples
 4. **Explain the reasoning** behind each principle
-5. **Focus especially on**: {', '.join(focus_areas)}
+5. **Focus especially on**: {", ".join(focus_areas)}
 
-Be constructive and educational in your feedback. Help developers understand not just what to fix, but why it matters for code quality and user experience.
+Be constructive and educational in your feedback. Help developers understand not just what to \
+fix, but why it matters for code quality and user experience.
 """
 
         return prompt
@@ -215,6 +333,33 @@ Be constructive and educational in your feedback. Help developers understand not
         principles = principles_data.get(
             "principles", principles_data
         )  # Handle nested structure
+
+        # Filter principles based on component type
+        component_to_principles = {
+            "ui": [
+                "accessibility",
+                "flexible_layout",
+                "design_integrity",
+                "localization",
+                "security",
+            ],
+            "business-logic": [
+                "testing",
+                "unidirectional_data_flow",
+                "minimal_dependencies",
+                "security",
+            ],
+            "data-layer": [
+                "testing",
+                "unidirectional_data_flow",
+                "minimal_dependencies",
+                "security",
+            ],
+        }
+
+        relevant_principles = component_to_principles.get(
+            component_type, list(principles.keys())
+        )
         philosophy = self.load_yaml(self.core_path / "philosophy.yaml")
         platforms_data = self.load_yaml(self.core_path / "platforms.yaml")
         platforms = platforms_data.get(
@@ -228,22 +373,24 @@ Be constructive and educational in your feedback. Help developers understand not
         else:
             pass
 
-        prompt = f"""# Code Generation Assistant for {platform.title()} {component_type.title()}
+        platform_title = self.get_platform_title(platform)
+        prompt = f"""# Code Generation Assistant for {platform_title} {component_type.title()}
 
-You are an expert developer creating high-quality code that follows Livefront's engineering principles.
+You are an expert developer creating high-quality code that follows Livefront's \
+engineering principles.
 
 ## Core Philosophy
 
-{philosophy.get('description', 'Build excellent software that users love.')}
+{philosophy.get("description", "Build excellent software that users love.")}
 
 **Values:**
-{chr(10).join(f"- {value}" for value in philosophy.get('values', []))}
+{chr(10).join(f"- {value}" for category in philosophy.get("core_values", {}).values() for value in category)}
 
 ## Engineering Principles
 
-{self.format_principles(principles)}
+{self.format_principles(principles, relevant_principles)}
 
-## Platform Requirements ({platform.title()})
+## Platform Requirements ({platform_title})
 
 {self.format_platform_requirements(platforms.get(platform, {}))}
 
@@ -293,15 +440,21 @@ Always explain your architectural decisions and how they align with the principl
             "platforms", platforms_data
         )  # Handle nested structure
 
-        prompt = f"""# Architecture Assistant for {platform.title()} {layer.title()} Layer
+        platform_title = self.get_platform_title(platform)
+        prompt = f"""# Architecture Assistant for {platform_title} {layer.title()} Layer
 
-You are an expert software architect helping design systems that follow Livefront's engineering principles.
+You are an expert software architect helping design systems that follow Livefront's \
+engineering principles.
 
 ## Architectural Principles
 
-{self.format_principles(principles, ['unidirectional_data_flow', 'minimal_dependencies', 'testing'])}
+{
+            self.format_principles(
+                principles, ["unidirectional_data_flow", "minimal_dependencies", "testing"]
+            )
+        }
 
-## Platform Requirements ({platform.title()})
+## Platform Requirements ({platform_title})
 
 {self.format_platform_requirements(platforms.get(platform, {}))}
 
@@ -346,16 +499,50 @@ Provide specific recommendations for structure, patterns, and implementation app
         )  # Handle nested structure
 
         platform_config = platforms.get(platform, {})
-        approved_deps = platform_config.get("approved_dependencies", [])
+        approved_deps_config = platform_config.get("approved_dependencies", {})
 
-        prompt = f"""# Dependency Evaluation for {platform.title()}
+        # Extract actual dependency names from nested structure
+        approved_deps = []
+        dependency_details = {}
+        for category, deps in approved_deps_config.items():
+            if isinstance(deps, list):
+                for dep_info in deps:
+                    if isinstance(dep_info, dict) and "name" in dep_info:
+                        dep_name = dep_info["name"]
+                        approved_deps.append(dep_name)
+                        dependency_details[dep_name.lower()] = dep_info
+
+        # Check status of requested dependencies
+        dependency_status = []
+        for dep in dependencies:
+            dep_lower = dep.lower()
+            is_approved = any(
+                dep_lower in approved_name.lower() for approved_name in approved_deps
+            )
+            status = "✅ APPROVED" if is_approved else "❌ NOT APPROVED"
+            dependency_status.append(f"- {dep} - {status}")
+
+            # Add details if approved
+            if is_approved:
+                for approved_name, details in dependency_details.items():
+                    if dep_lower in approved_name.lower():
+                        dependency_status.append(
+                            f"  - Purpose: {details.get('purpose', 'Not specified')}"
+                        )
+                        dependency_status.append(
+                            f"  - Version: {details.get('version', 'Not specified')}"
+                        )
+                        break
+
+        platform_title = self.get_platform_title(platform)
+        prompt = f"""# Dependency Evaluation for {platform_title}
 
 You are evaluating whether these dependencies should be approved for use in {platform} projects.
 
-## Dependencies to Evaluate
-{chr(10).join(f"- {dep}" for dep in dependencies)}
+## Dependency Status Check
+{chr(10).join(dependency_status)}
 
-## Current Approved Dependencies
+## All Approved Dependencies for {platform_title}
 {chr(10).join(f"- {dep}" for dep in approved_deps)}
 
 ## Evaluation Criteria
@@ -382,7 +569,7 @@ You are evaluating whether these dependencies should be approved for use in {pla
 
 ## Minimal Dependencies Principle
 
-{principles.get('minimal_dependencies', {}).get('description', 'Minimize external dependencies')}
+{principles.get("minimal_dependencies", {}).get("description", "Minimize external dependencies")}
 
 ## Instructions
 
