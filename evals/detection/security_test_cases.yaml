@@ -5,6 +5,7 @@ test_cases:
   - id: "SEC-001"
     name: "Hardcoded API Key"
     category: "secrets_in_code"
+    platforms: ["all"]
     code: |
       class ApiClient {
         private val apiKey = "sk-1234567890abcdef1234567890abcdef"
@@ -16,13 +17,13 @@ test_cases:
       rule: "hardcoded_secrets"
       severity: "critical"
       message_contains: "API key found"
-    
+
   - id: "SEC-002"
     name: "HTTP URL in production"
     category: "insecure_urls"
     code: |
       const API_ENDPOINT = "http://api.production.com/v1/users"
-      
+
       fetch(API_ENDPOINT)
         .then(response => response.json())
     language: "javascript"
@@ -31,7 +32,7 @@ test_cases:
       rule: "insecure_urls"
       severity: "critical"
       message_contains: "HTTP URL found"
-    
+
   - id: "SEC-003"
     name: "Password in SharedPreferences"
     category: "insecure_storage"
@@ -49,7 +50,7 @@ test_cases:
       rule: "insecure_storage"
       severity: "critical"
       suggestion_contains: "EncryptedSharedPreferences"
-    
+
   - id: "SEC-004"
     name: "Localhost URL (should not flag)"
     category: "insecure_urls"
@@ -60,7 +61,7 @@ test_cases:
     expected:
       detected: false
       reason: "Localhost URLs are acceptable"
-    
+
   - id: "SEC-005"
     name: "Test file with example credentials"
     category: "hardcoded_secrets"
@@ -79,13 +80,13 @@ test_cases:
     expected:
       detected: false
       reason: "Test files may contain example credentials"
-    
+
   - id: "SEC-006"
     name: "Weak crypto algorithm"
     category: "weak_crypto"
     code: |
       import java.security.MessageDigest
-      
+
       fun hashPassword(password: String): String {
         val md = MessageDigest.getInstance("MD5")
         return md.digest(password.toByteArray()).toHexString()
@@ -97,7 +98,7 @@ test_cases:
       severity: "blocking"
       message_contains: "Weak hashing algorithm"
       suggestion_contains: "SHA-256"
-    
+
   - id: "SEC-007"
     name: "Missing certificate pinning"
     category: "certificate_pinning"
@@ -113,7 +114,7 @@ test_cases:
       rule: "certificate_pinning"
       severity: "required"
       message_contains: "No certificate pinning"
-    
+
   - id: "SEC-008"
     name: "localStorage with sensitive data"
     category: "insecure_storage"
@@ -128,7 +129,7 @@ test_cases:
       rule: "insecure_storage"
       severity: "critical"
       message_contains: "sensitive data in localStorage"
-    
+
   - id: "SEC-009"
     name: "Cleartext traffic enabled"
     category: "insecure_urls"
@@ -147,7 +148,7 @@ test_cases:
       rule: "insecure_urls"
       severity: "critical"
       message_contains: "Cleartext traffic enabled"
-    
+
   - id: "SEC-010"
     name: "Complex case with multiple issues"
     category: "multiple"
@@ -155,14 +156,14 @@ test_cases:
       class PaymentService {
         private val apiKey = "pk_live_123456789"
         private val endpoint = "http://payments.example.com"
-        
+
         fun processPayment(cardNumber: String, cvv: String) {
           val hashedCard = MD5.hash(cardNumber)
-          
+
           SharedPreferences.getInstance().edit()
             .putString("last_card", hashedCard)
             .apply()
-            
+
           // Make payment request
           HttpClient.post(endpoint, mapOf(
             "api_key" to apiKey,
@@ -191,7 +192,7 @@ evaluation_metrics:
     false_positives: "Incorrectly flagged valid code"
     true_negatives: "Correctly ignored valid code"
     false_negatives: "Missed actual violations"
-  
+
   precision: "true_positives / (true_positives + false_positives)"
   recall: "true_positives / (true_positives + false_negatives)"
   f1_score: "2 * (precision * recall) / (precision + recall)"
@@ -201,14 +202,14 @@ test_execution:
     - "Load detection rules"
     - "Configure context detection"
     - "Set confidence thresholds"
-  
+
   for_each_test:
     - "Parse code sample"
     - "Detect context (file type, path)"
     - "Apply relevant rules"
     - "Compare with expected results"
     - "Record metrics"
-  
+
   reporting:
     - "Overall accuracy score"
     - "Per-rule performance"
