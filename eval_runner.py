@@ -570,26 +570,26 @@ def enhance_prompt_with_llm(
 
         enhancement_prompt = f"""Expert in engineering standards across security and accessibility.
 
-Enhance this prompt with cutting-edge detection capabilities and analysis approaches.
+Enhance this prompt with additional specific detection patterns while MAINTAINING ACCURACY.
 
 **ADD these enhancement layers (preserve ALL original content):**
 
-1. **Cutting-Edge Detection Rules** (2024/2025):
-   - Latest OWASP patterns, CVE-based detections
+1. **Specific Modern Patterns** (2024/2025):
+   - Latest OWASP patterns for REAL vulnerabilities (not localhost/test code)
    - Modern framework antipatterns (React 18+, TypeScript 5+)
-   - Current WCAG 2.2 patterns, emerging ARIA techniques
-   - Contemporary testing practices, modern tooling patterns
+   - Current WCAG 2.2 VIOLATIONS (not compliant code)
+   - Contemporary testing gaps, not all missing tests
 
-2. **Sophisticated Analysis Approaches**:
-   - Cross-file dependency analysis methods
-   - Contextual severity assessment guidelines
-   - Framework-specific intelligence (Next.js, Gatsby, React patterns)
-   - Performance implication detection
+2. **Precision-Focused Analysis**:
+   - AVOID FALSE POSITIVES - localhost/dev URLs are NOT violations
+   - Test files and examples are NOT production violations
+   - Good accessibility (proper ARIA, good contrast) should PASS
+   - Context matters - be specific about ACTUAL problems
 
 3. **Advanced Pattern Detection**:
-   - Multi-line complex pattern examples
-   - Semantic code analysis techniques
-   - Composition analysis for compound violations
+   - Multi-line vulnerabilities that span code blocks
+   - Semantic issues beyond regex patterns
+   - Compound violations that require understanding context
 
 4. **Real-Time Intelligence**:
    - Current industry standards and best practices
