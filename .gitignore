@@ -34,6 +34,17 @@ Thumbs.db
 output/
 temp/
 notes/
+.claude/
+
+# Development cruft
+*_prompt.txt
+*_test.txt
+debug_*.txt
+analysis_*.txt
+demo_*.md
+enhanced_*.md
+test_*.py
+test_*.md
 
 # Evaluation reports (keep only committed baseline)
 *_enhanced.md
