@@ -523,7 +523,7 @@ Review code against Livefront's standards. **Priority**: Security > Accessibilit
 
 ## Instructions
 
-1. **Identify violations** using patterns above
+1. **Start by identifying violations** using the patterns above, then find others
 2. **Classify severity**: Critical → Blocking → Required → Recommended
 3. **Provide specific fixes** with before/after examples
 4. **Focus on**: {", ".join(focus_areas)}
@@ -767,27 +767,31 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="""🚀 Livefront Engineering Principles CLI
 
-Generate comprehensive AI prompts with integrated detection patterns for:
-• Code review with 70%+ test coverage using YAML-based regex patterns
-• Code generation following platform-specific best practices
-• Architecture guidance for unidirectional data flow and testing
-• Dependency evaluation against approved libraries
+Generate AI prompts with integrated detection patterns for:
+• User prompts: Code review requests with 70%+ test coverage using YAML patterns
+• System prompts: AI assistant setup for code generation with platform standards
+• Architecture guidance: Unidirectional data flow and testing principles
+• Dependency evaluation: Assessment against approved libraries
 
-Enhanced with cutting-edge intelligence when used with eval_runner.py --enhanced""",
+Enhanced mode available with eval_runner.py --enhanced (experimental)""",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 🔍 Examples:
-  %(prog)s review --platform web --focus security,accessibility
-  %(prog)s generate --platform android --component ui
+  %(prog)s review --platform web --focus security,accessibility    # User prompt
+  %(prog)s generate --platform android --component ui              # System prompt
   %(prog)s architecture --platform web --layer data
   %(prog)s dependencies --platform ios --check react-native,lodash
+
+💡 Usage Pattern:
+  1. Set system prompt: %(prog)s generate --platform web --component ui > system.txt
+  2. Use for reviews: %(prog)s review --platform web --focus security > review.txt
         """,
     )
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
-    # Review command
-    review_parser = subparsers.add_parser("review", help="Generate code review prompt")
+    # Review command - generates user prompts
+    review_parser = subparsers.add_parser("review", help="Generate user prompt for code review")
     review_parser.add_argument("--platform", choices=["android", "ios", "web"], required=True)
     review_parser.add_argument(
         "--focus",
@@ -795,8 +799,10 @@ Enhanced with cutting-edge intelligence when used with eval_runner.py --enhanced
         help="Comma-separated focus areas",
     )
 
-    # Generate command
-    generate_parser = subparsers.add_parser("generate", help="Generate code writing prompt")
+    # Generate command - generates system prompts
+    generate_parser = subparsers.add_parser(
+        "generate", help="Generate system prompt for AI code assistant"
+    )
     generate_parser.add_argument("--platform", choices=["android", "ios", "web"], required=True)
     generate_parser.add_argument(
         "--component", default="ui", help="Component type (ui, business, data)"
