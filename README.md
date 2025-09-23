@@ -1,6 +1,16 @@
-# Livefront Engineering Principles
+# LEAP - Livefront Engineering Automated Principles
 
 A modular system for encoding and enforcing Livefront's engineering principles through AI-powered code detection and generation.
+
+## 🧪 Experimental Nature
+
+This project is an **ongoing experiment** in human-AI collaboration for code quality. Beyond the practical tool, it explores fundamental questions:
+
+- **Codification**: How do we translate human principles and philosophies into patterns that LLMs can reliably apply?
+- **Evaluation**: What makes a good eval for engineering principles prompts? How do we measure success?
+- **Balance**: Where's the line between hard-coded rules (YAML patterns) vs letting LLMs research and decide?
+
+The answers aren't clear yet - LEAP represents our current best attempt at finding the right balance.
 
 ## Philosophy
 
@@ -23,32 +33,32 @@ cd engineering_principles
 # Install dependencies
 uv sync
 
-# 🚀 Generate comprehensive code review prompts
+# » Generate comprehensive code review prompts
 uv run python principles_cli.py review --platform web --focus security
 uv run python principles_cli.py review --platform android --focus accessibility,testing
 uv run python principles_cli.py review --platform ios --focus architecture
 
-# 📝 Generate code writing prompts with enforcement guidelines
+# » Generate system prompts for AI assistant setup
 uv run python principles_cli.py generate --platform web --component ui
 uv run python principles_cli.py generate --platform android --component business-logic
 
-# 🏗️ Generate architecture guidance prompts
+# » Generate architecture guidance prompts
 uv run python principles_cli.py architecture --platform web
 
-# 📦 Evaluate dependency approval
+# » Evaluate dependency approval
 uv run python principles_cli.py dependencies --platform web --check react,typescript
 
-# 🧪 Test prompt effectiveness (requires API keys in .env)
+# » Test prompt effectiveness (requires API keys in .env)
 cp .env.example .env  # Edit with your API keys
 uv run python eval_runner.py --mode detection --platform web --focus accessibility
 
-# ⚡ Enhanced mode with cutting-edge intelligence (100% coverage)
+# » Enhanced mode attempts to improve detection with cutting-edge intelligence
 uv run python eval_runner.py --mode detection --platform web --focus security --enhanced
 ```
 
 ## System Architecture
 
-This modular system separates core knowledge from implementation details:
+LEAP uses a modular architecture that separates core knowledge from implementation details:
 
 ```
 engineering_principles/
@@ -128,22 +138,39 @@ Our comprehensive detection system provides **100% coverage** through a sophisti
 - Testing: Missing tests, flaky patterns, coverage issues
 - Architecture: Data flow violations, tight coupling, error handling
 
-### **Enhanced Detection Layer (30% Coverage)**
-**LLM-powered cutting-edge intelligence:**
+### **Enhanced Detection Layer (Experimental)**
+**LLM-powered intelligence that attempts to improve detection:**
 - **Latest Standards**: OWASP 2024, WCAG 2.2, framework-specific patterns
 - **Sophisticated Analysis**: Cross-file dependencies, contextual severity
 - **Advanced Patterns**: Multi-line detection, semantic code analysis
 - **Real-Time Updates**: Current vulnerabilities, modern tooling, platform evolution
+- **Note**: Enhancement is experimental and may not always improve accuracy
 
 ### **Architecture Benefits**
 - **Reliable Core**: YAML patterns ensure consistent detection
-- **Cutting-Edge Intelligence**: LLM enhancement adds latest practices
+- **Experimental Enhancement**: LLM attempts to add latest practices
 - **No Tight Coupling**: Base patterns stay stable, enhancements evolve
 - **Maximum Power**: Combines objective patterns with intelligent analysis
 
 ## CLI Usage
 
-The `principles_cli.py` script generates prompts with integrated YAML detection rules.
+The `principles_cli.py` script generates two types of AI prompts with integrated YAML detection rules:
+
+### **Two-Prompt Pattern**
+
+1. **System Prompts** (`generate` command): Set up AI assistants with persistent role and constraints
+2. **User Prompts** (`review` command): Make specific requests within established context
+
+**Usage Pattern:**
+```bash
+# Step 1: Set up AI assistant with system prompt
+python principles_cli.py generate --platform web --component ui > system.txt
+
+# Step 2: Use for specific review tasks
+python principles_cli.py review --platform web --focus security > review.txt
+```
+
+This separation allows maximum flexibility - configure domain-specific AI assistants once, then use targeted review prompts for specific tasks.
 
 ### **Enhancement Layers**
 
@@ -154,11 +181,11 @@ The `principles_cli.py` script generates prompts with integrated YAML detection 
 - 70%+ test case coverage with objective pattern matching
 
 **Enhanced Layer** (`--enhanced` flag):
-- LLM adds cutting-edge 2024/2025 detection capabilities
+- LLM attempts to add cutting-edge 2024/2025 detection capabilities
 - Latest OWASP, WCAG 2.2, framework-specific intelligence
 - Sophisticated cross-file and contextual analysis techniques
 - Real-time updates for current vulnerabilities and best practices
-- 100% comprehensive coverage combining patterns + intelligence
+- **Note**: Experimental - aims for comprehensive coverage but may introduce false positives
 
 ### Basic Commands
 
@@ -850,8 +877,8 @@ uv run python eval_runner.py --mode detection --enhanced --output results.json
 
 ## Performance Metrics
 
-- **Base Detection**: 70%+ accuracy on engineering principle violations
-- **Enhanced Mode**: 100% comprehensive coverage with cutting-edge intelligence
+- **Base Detection**: 70%-85% accuracy on engineering principle violations
+- **Enhanced Mode**: Experimental - attempts to improve detection with LLM intelligence
 - **Platform Coverage**: Android, iOS, Web with platform-specific patterns
 - **Evaluation Speed**: ~30s base mode, ~60s enhanced mode per focus area
 - **Pattern Library**: 100+ regex patterns across security, accessibility, testing, architecture
