@@ -33,6 +33,7 @@ Thumbs.db
 .cache/
 output/
 temp/
+notes/
 
 # Evaluation reports (keep only committed baseline)
 *_enhanced.md
