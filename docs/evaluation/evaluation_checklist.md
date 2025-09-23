@@ -2,7 +2,7 @@
 
 Based on testing all commands from the loom script, here are the improvements needed to make the YAML configuration more effective for LLM prompts:
 
-## ✅ Major Issues Found
+## Major Issues Found
 
 ### 1. **Empty Detection Rules for Non-Security Focus Areas**
 
@@ -34,7 +34,7 @@ Based on testing all commands from the loom script, here are the improvements ne
 - [X] **Fix**: Add regex patterns for missing ARIA labels, contrast issues, semantic HTML
 - [X] **Impact**: LLMs can't actually detect accessibility violations
 
-## ✅ Moderate Issues
+## Moderate Issues
 
 ### 6. **Code Generation Prompts Too Verbose**
 
@@ -54,7 +54,7 @@ Based on testing all commands from the loom script, here are the improvements ne
 - [X] **Fix**: Add more specific tools and commands to run
 - [X] **Impact**: LLMs need more concrete actions
 
-## ✅ Minor Issues
+## Minor Issues
 
 ### 9. **Philosophy Section Missing Values**
 
@@ -80,7 +80,7 @@ Based on testing all commands from the loom script, here are the improvements ne
 - [ ] **Fix**: Include examples of approved/rejected dependencies with reasoning
 - [ ] **Impact**: Less educational for developers
 
-## ✅ Priority Order for Fixes
+## Priority Order for Fixes
 
 ### High Priority (Demo-Breaking Issues)
 
@@ -102,18 +102,18 @@ Based on testing all commands from the loom script, here are the improvements ne
 10. Performance/Style Detection Rules
 11. Dependency Examples
 
-## ✅ Success Criteria
+## Success Criteria
 
 After fixes, the loom script should demonstrate:
 
-- ✅ **Specific, actionable detection patterns** for all focus areas
-- ✅ **Platform-appropriate principles** in every output
-- ✅ **Working dependency validation** that actually checks approved lists
-- ✅ **Consistent, professional formatting** across all platforms
-- ✅ **Focused, relevant content** for each command type
-- ✅ **Clear enforcement instructions** that LLMs can follow
+- [√] **Specific, actionable detection patterns** for all focus areas
+- [√] **Platform-appropriate principles** in every output
+- [√] **Working dependency validation** that actually checks approved lists
+- [√] **Consistent, professional formatting** across all platforms
+- [√] **Focused, relevant content** for each command type
+- [√] **Clear enforcement instructions** that LLMs can follow
 
-## ✅ Testing Plan
+## Testing Plan
 
 For each fix:
 
