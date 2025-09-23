@@ -117,6 +117,37 @@ class TestFormatPrinciples:
         assert "### Accessibility" in result
         assert "### Testing" not in result
 
+    def test_format_principles_with_component_filter(self) -> None:
+        """Test formatting principles with component-based filtering (e.g., UI components)."""
+        cli = PrinciplesCLI()
+        principles = {
+            "accessibility": {"why": "Access matters", "how": ["Use ARIA"]},
+            "flexible_layout": {"why": "Layout matters", "how": ["Use flexbox"]},
+            "design_integrity": {"why": "Design matters", "how": ["Follow specs"]},
+            "localization": {"why": "L10n matters", "how": ["Externalize strings"]},
+            "security": {"why": "Security matters", "how": ["Use HTTPS"]},
+            "testing": {"why": "Testing matters", "how": ["Write tests"]},
+            "unidirectional_data_flow": {"why": "Data flow matters", "how": ["One-way"]},
+        }
+        # UI component principles (like what generate_code_prompt passes)
+        ui_principles = [
+            "accessibility",
+            "flexible_layout",
+            "design_integrity",
+            "localization",
+            "security",
+        ]
+
+        result = cli.format_principles(principles, ui_principles)
+        assert "### Accessibility" in result
+        assert "### Flexible_Layout" in result
+        assert "### Design_Integrity" in result
+        assert "### Localization" in result
+        assert "### Security" in result
+        # These shouldn't be included for UI components
+        assert "### Testing" not in result
+        assert "### Unidirectional_Data_Flow" not in result
+
     def test_format_principles_missing_fields(self) -> None:
         """Test formatting principles with missing fields."""
         cli = PrinciplesCLI()
@@ -224,14 +255,12 @@ class TestFormatDetectionRules:
                 "insecure_storage": {
                     "description": "Detect insecure storage",
                     "severity": "critical",
-                    "patterns": {
-                        "android_patterns": [
-                            {
-                                "regex": "SharedPreferences.*password",
-                                "message": "Insecure storage",
-                            }
-                        ]
-                    },
+                    "patterns": [
+                        {
+                            "regex": "SharedPreferences.*password",
+                            "message": "Insecure storage",
+                        }
+                    ],
                 }
             }
         }
@@ -239,7 +268,8 @@ class TestFormatDetectionRules:
         result = cli.format_detection_rules(rules)
         assert "### Security Rules" in result
         assert "**Insecure Storage** (Severity: critical)" in result
-        assert "android_patterns: `SharedPreferences.*password`" in result
+        assert "- Detection patterns:" in result
+        assert "SharedPreferences.*password" in result
 
     def test_format_detection_rules_empty(self) -> None:
         """Test formatting empty detection rules."""
@@ -347,7 +377,7 @@ class TestGenerateReviewPrompt:
         with patch("pathlib.Path.exists", return_value=False):
             result = cli.generate_review_prompt("ios", ["nonexistent"])
 
-        assert "# Code Review Assistant for Ios" in result
+        assert "# Code Review Assistant for iOS" in result
         assert "Focus especially on**: nonexistent" in result
 
 
@@ -372,6 +402,72 @@ class TestGenerateCodePrompt:
         assert "Ui" in result  # Component type appears in title
         assert "## Engineering Principles" in result
         assert "## Platform Requirements (Android)" in result
+
+    @patch("principles_cli.PrinciplesCLI.load_yaml")
+    def test_generate_code_prompt_ui_filtering(self, mock_load_yaml: Any) -> None:
+        """Test that UI component generation only includes relevant principles."""
+        cli = PrinciplesCLI()
+
+        mock_load_yaml.side_effect = [
+            {
+                "principles": {
+                    "accessibility": {"why": "Access for all", "how": ["Use ARIA"]},
+                    "flexible_layout": {"why": "Responsive design", "how": ["Flexbox"]},
+                    "design_integrity": {"why": "Match designs", "how": ["Follow specs"]},
+                    "localization": {"why": "Global reach", "how": ["Externalize strings"]},
+                    "security": {"why": "Protect users", "how": ["HTTPS only"]},
+                    "testing": {"why": "Quality code", "how": ["80% coverage"]},
+                    "unidirectional_data_flow": {"why": "Data flow", "how": ["One-way"]},
+                }
+            },
+            {"description": "Build excellent software"},  # philosophy.yaml
+            {"platforms": {"android": {"tools": {"linting": ["ktlint"]}}}},
+        ]
+
+        with patch("pathlib.Path.exists", return_value=False):  # guidance.yaml doesn't exist
+            result = cli.generate_code_prompt("android", "ui")
+
+        # UI components should only show these principles
+        assert "### Accessibility" in result
+        assert "### Flexible_Layout" in result
+        assert "### Design_Integrity" in result
+        assert "### Localization" in result
+        assert "### Security" in result
+        # These should NOT be in UI component generation
+        assert "### Testing" not in result
+        assert "### Unidirectional_Data_Flow" not in result
+
+    @patch("principles_cli.PrinciplesCLI.load_yaml")
+    def test_generate_code_prompt_business_logic_filtering(self, mock_load_yaml: Any) -> None:
+        """Test that business logic component generation only includes relevant principles."""
+        cli = PrinciplesCLI()
+
+        mock_load_yaml.side_effect = [
+            {
+                "principles": {
+                    "accessibility": {"why": "Access for all", "how": ["Use ARIA"]},
+                    "testing": {"why": "Quality code", "how": ["80% coverage"]},
+                    "unidirectional_data_flow": {"why": "Data flow", "how": ["One-way"]},
+                    "minimal_dependencies": {"why": "Simplicity", "how": ["Avoid bloat"]},
+                    "security": {"why": "Protect users", "how": ["HTTPS only"]},
+                    "flexible_layout": {"why": "Responsive design", "how": ["Flexbox"]},
+                }
+            },
+            {"description": "Build excellent software"},  # philosophy.yaml
+            {"platforms": {"android": {"tools": {"testing": ["JUnit"]}}}},
+        ]
+
+        with patch("pathlib.Path.exists", return_value=False):  # guidance.yaml doesn't exist
+            result = cli.generate_code_prompt("android", "business-logic")
+
+        # Business logic components should only show these principles
+        assert "### Testing" in result
+        assert "### Unidirectional_Data_Flow" in result
+        assert "### Minimal_Dependencies" in result
+        assert "### Security" in result
+        # These should NOT be in business logic component generation
+        assert "### Accessibility" not in result
+        assert "### Flexible_Layout" not in result
 
 
 class TestArchitecturePrompt:
@@ -425,8 +521,8 @@ class TestDependencyPrompt:
         result = cli.generate_dependency_prompt("android", ["rxjava2"])
 
         assert "# Dependency Evaluation for Android" in result
-        assert "## Dependencies to Evaluate" in result
-        assert "- rxjava2" in result
+        assert "## Dependency Status Check" in result
+        assert "rxjava2" in result
 
     @patch("principles_cli.PrinciplesCLI.load_yaml")
     def test_generate_dependency_prompt_multiple(self, mock_load_yaml: Any) -> None:
@@ -440,10 +536,10 @@ class TestDependencyPrompt:
 
         result = cli.generate_dependency_prompt("ios", ["react-native", "lodash"])
 
-        assert "# Dependency Evaluation for Ios" in result
-        assert "## Dependencies to Evaluate" in result
-        assert "- react-native" in result
-        assert "- lodash" in result
+        assert "# Dependency Evaluation for iOS" in result
+        assert "## Dependency Status Check" in result
+        assert "react-native" in result
+        assert "lodash" in result
 
 
 if __name__ == "__main__":

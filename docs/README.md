@@ -3,7 +3,7 @@
 ## Core Documentation
 - [README.md](../README.md) - Main project documentation
 - [CLI_REFERENCE.md](CLI_REFERENCE.md) - Command-line interface reference
-- [CHANGELOG.md](CHANGELOG.md) - Version history and changes
+- Version history: Use `git log --oneline` for changes
 
 ## Development
 - [loom_script.md](loom_script.md) - Demo script for showcasing features
