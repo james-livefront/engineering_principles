@@ -13,7 +13,7 @@
 - [x] Multi-layered detection architecture (base + enhanced)
 - [x] Comprehensive documentation and examples
 
-## High Priority TODO
+## TODO
 
 ### Missing Detection Rules Integration
 
@@ -37,6 +37,26 @@
 - [ ] Expand test cases for edge scenarios
 - [ ] Add regression tests for new principles
 - [ ] Improve evaluation metrics (precision/recall per severity)
+
+### Test Suite Enhancements
+
+**Integration Testing**
+- [ ] End-to-end prompt generation workflow tests
+- [ ] Smart Context Detection metadata integration validation
+- [ ] Cross-platform prompt consistency verification
+- [ ] YAML rule integration with CLI command testing
+
+**File I/O Testing**
+- [ ] Edge case handling for malformed YAML files
+- [ ] Permission error scenarios and graceful degradation
+- [ ] Large file handling and performance validation
+- [ ] Directory traversal and file discovery testing
+
+**Platform Coverage Testing**
+- [ ] All platform combinations (iOS/Android/Web) with all principle types
+- [ ] Platform-specific rule application verification
+- [ ] Cross-platform metadata inheritance testing
+- [ ] Platform filtering accuracy in evaluation framework
 
 ## Future Enhancements
 
