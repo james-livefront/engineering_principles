@@ -88,14 +88,58 @@ class AIEvaluator(Protocol):
 
 @dataclass
 class EvaluationReport:
+    """
+    Evaluation metrics for prompt effectiveness.
+
+    Metrics Definitions:
+    - accuracy: Overall correctness (TP + TN) / Total
+    - precision: When we predict violation, how often right? TP / (TP + FP)
+    - recall: Of actual violations, how many caught? TP / (TP + FN)
+    - f1_score: Harmonic mean of precision/recall: 2 * (P*R) / (P+R)
+
+    See docs/evaluation-metrics.md for detailed explanations.
+    """
+
     total_tests: int
     correct_predictions: int
-    accuracy: float
-    precision: float
-    recall: float
-    f1_score: float
+    accuracy: float  # Overall correctness
+    precision: float  # True positives / (True positives + False positives)
+    recall: float  # True positives / (True positives + False negatives)
+    f1_score: float  # Harmonic mean of precision and recall
     results_by_category: dict[str, dict[str, float]]
     failed_tests: list[TestResult]
+
+
+@dataclass
+class ConfigResult:
+    """Single configuration evaluation result"""
+
+    config_name: str
+    config_path: str | None
+    prompt_content: str
+    report: EvaluationReport
+    metadata: dict[str, Any]
+
+
+@dataclass
+class MultiConfigReport:
+    """
+    Comparative evaluation results across multiple configurations.
+
+    Enables analysis of:
+    - Performance differences between configs
+    - Complementary strengths (which violations each config catches)
+    - Statistical significance of performance gaps
+    - Best practices for config merging
+    """
+
+    config_results: list[ConfigResult]
+    comparison_matrix: dict[str, dict[str, float]]  # config_name -> metric -> value
+    best_config_per_metric: dict[str, str]  # metric -> config_name
+    complementary_coverage: dict[str, set[str]]  # config_name -> set of unique test_ids caught
+    statistical_significance: dict[
+        tuple[str, str], dict[str, float]
+    ]  # (config1, config2) -> metric -> p_value
 
 
 class PromptEvaluator:
@@ -211,6 +255,199 @@ class PromptEvaluator:
 
         return self._calculate_evaluation_report(all_results, category_stats)
 
+    def evaluate_multiple_configs(
+        self,
+        configs: list[dict[str, Any]],
+        ai_evaluator: AIEvaluator,
+        principles: list[str] | None = None,
+        parallel: bool = True,
+    ) -> MultiConfigReport:
+        """
+        Evaluate multiple configurations and compare their performance.
+
+        Args:
+            configs: List of config dictionaries with 'name', 'prompt', optional 'path'
+            ai_evaluator: AI model for evaluation
+            principles: Specific principles to test (None = all)
+            parallel: Run evaluations concurrently for speed
+
+        Returns:
+            MultiConfigReport with comparative analysis
+        """
+        import concurrent.futures
+
+        print(f"\n🔄 Evaluating {len(configs)} configurations...")
+
+        # Run evaluations (parallel or sequential)
+        config_results = []
+        if parallel and len(configs) > 1:
+            with concurrent.futures.ThreadPoolExecutor(
+                max_workers=min(4, len(configs))
+            ) as executor:
+                # Submit all evaluation tasks
+                future_to_config = {
+                    executor.submit(
+                        self._evaluate_single_config, config, ai_evaluator, principles
+                    ): config
+                    for config in configs
+                }
+
+                # Collect results as they complete
+                for future in concurrent.futures.as_completed(future_to_config):
+                    config = future_to_config[future]
+                    try:
+                        result = future.result()
+                        config_results.append(result)
+                    except Exception as e:
+                        print(f"❌ Error evaluating {config.get('name', 'unknown')}: {e}")
+        else:
+            # Sequential evaluation
+            for config in configs:
+                try:
+                    result = self._evaluate_single_config(config, ai_evaluator, principles)
+                    config_results.append(result)
+                except Exception as e:
+                    print(f"❌ Error evaluating {config.get('name', 'unknown')}: {e}")
+
+        if not config_results:
+            raise ValueError("No successful evaluations to compare")
+
+        # Generate comparative analysis
+        comparison_matrix = self._build_comparison_matrix(config_results)
+        best_per_metric = self._find_best_per_metric(comparison_matrix)
+        complementary_coverage = self._analyze_complementary_coverage(config_results)
+        statistical_significance = self._calculate_statistical_significance(config_results)
+
+        print(f"\n✅ Completed evaluation of {len(config_results)} configurations")
+
+        return MultiConfigReport(
+            config_results=config_results,
+            comparison_matrix=comparison_matrix,
+            best_config_per_metric=best_per_metric,
+            complementary_coverage=complementary_coverage,
+            statistical_significance=statistical_significance,
+        )
+
+    def _evaluate_single_config(
+        self,
+        config: dict[str, Any],
+        ai_evaluator: AIEvaluator,
+        principles: list[str] | None = None,
+    ) -> ConfigResult:
+        """Evaluate a single configuration"""
+        config_name = config.get("name", "unnamed")
+        config_path = config.get("path")
+        prompt_content = config.get("prompt", "")
+
+        if not prompt_content and config_path:
+            # Load prompt from file
+            try:
+                with open(config_path) as f:
+                    prompt_content = f.read()
+            except Exception as e:
+                raise ValueError(f"Could not load prompt from {config_path}: {e}") from e
+
+        if not prompt_content:
+            raise ValueError(f"No prompt content for config '{config_name}'")
+
+        print(f"  📊 Evaluating '{config_name}'...")
+
+        # Run the standard evaluation
+        report = self.evaluate_detection_prompt(prompt_content, ai_evaluator, principles)
+
+        # Parse metadata for additional context
+        metadata = parse_prompt_metadata(prompt_content)
+        metadata.update(config.get("metadata", {}))
+
+        return ConfigResult(
+            config_name=config_name,
+            config_path=config_path,
+            prompt_content=prompt_content,
+            report=report,
+            metadata=metadata,
+        )
+
+    def _build_comparison_matrix(
+        self, config_results: list[ConfigResult]
+    ) -> dict[str, dict[str, float]]:
+        """Build performance comparison matrix"""
+        matrix = {}
+
+        for result in config_results:
+            matrix[result.config_name] = {
+                "accuracy": result.report.accuracy,
+                "precision": result.report.precision,
+                "recall": result.report.recall,
+                "f1_score": result.report.f1_score,
+                "total_tests": float(result.report.total_tests),
+                "correct_predictions": float(result.report.correct_predictions),
+            }
+
+        return matrix
+
+    def _find_best_per_metric(
+        self, comparison_matrix: dict[str, dict[str, float]]
+    ) -> dict[str, str]:
+        """Identify best performing config for each metric"""
+        if not comparison_matrix:
+            return {}
+
+        metrics = ["accuracy", "precision", "recall", "f1_score"]
+        best_per_metric = {}
+
+        for metric in metrics:
+            best_config = max(
+                comparison_matrix.keys(),
+                key=lambda config: comparison_matrix[config].get(metric, 0),
+            )
+            best_per_metric[metric] = best_config
+
+        return best_per_metric
+
+    def _analyze_complementary_coverage(
+        self, config_results: list[ConfigResult]
+    ) -> dict[str, set[str]]:
+        """Analyze which test cases each config uniquely handles well"""
+        coverage = {}
+
+        for result in config_results:
+            # Tests that this config got right
+            correct_test_ids = {
+                test.test_id
+                for test in result.report.failed_tests
+                if hasattr(test, "test_id") and test.correct
+            }
+            coverage[result.config_name] = correct_test_ids
+
+        return coverage
+
+    def _calculate_statistical_significance(
+        self, config_results: list[ConfigResult]
+    ) -> dict[tuple[str, str], dict[str, float]]:
+        """Calculate statistical significance between config pairs (placeholder)"""
+        # This is a simplified placeholder - real implementation would use proper statistical tests
+        significance = {}
+
+        for i, result1 in enumerate(config_results):
+            for _j, result2 in enumerate(config_results[i + 1 :], i + 1):
+                config_pair = (result1.config_name, result2.config_name)
+
+                # Simplified significance calculation based on performance difference
+                acc_diff = abs(result1.report.accuracy - result2.report.accuracy)
+                prec_diff = abs(result1.report.precision - result2.report.precision)
+                rec_diff = abs(result1.report.recall - result2.report.recall)
+                f1_diff = abs(result1.report.f1_score - result2.report.f1_score)
+
+                # Simple heuristic: >5% difference is "significant"
+                significance[config_pair] = {
+                    "accuracy": 0.05 if acc_diff > 0.05 else 0.5,
+                    "precision": 0.05 if prec_diff > 0.05 else 0.5,
+                    "recall": 0.05 if rec_diff > 0.05 else 0.5,
+                    "f1_score": 0.05 if f1_diff > 0.05 else 0.5,
+                }
+
+        return significance
+
     def _run_detection_test(
         self, prompt: str, test_case: dict[str, Any], ai_evaluator: AIEvaluator
     ) -> TestResult:
@@ -274,7 +511,19 @@ class PromptEvaluator:
     def _calculate_evaluation_report(
         self, results: list[TestResult], category_stats: dict[str, dict[str, Any]]
     ) -> EvaluationReport:
-        """Calculate evaluation metrics"""
+        """
+        Calculate evaluation metrics from test results.
+
+        Metrics calculated:
+        - Accuracy: (TP + TN) / Total - overall correctness
+        - Precision: TP / (TP + FP) - when we predict violation, how often right?
+        - Recall: TP / (TP + FN) - of actual violations, how many caught?
+        - F1: 2 * (P * R) / (P + R) - harmonic mean of precision/recall
+
+        High precision = fewer false alarms
+        High recall = fewer missed violations
+        See docs/evaluation-metrics.md for trade-off guidance.
+        """
         if not results:
             return EvaluationReport(0, 0, 0, 0, 0, 0, {}, [])
 
@@ -282,20 +531,28 @@ class PromptEvaluator:
         correct_predictions = sum(1 for r in results if r.correct)
         accuracy = correct_predictions / total_tests
 
-        true_positives = sum(1 for r in results if r.expected and r.detected)
-        false_positives = sum(1 for r in results if not r.expected and r.detected)
-        false_negatives = sum(1 for r in results if r.expected and not r.detected)
+        # Calculate confusion matrix components
+        true_positives = sum(
+            1 for r in results if r.expected and r.detected
+        )  # Correctly found violations
+        false_positives = sum(1 for r in results if not r.expected and r.detected)  # False alarms
+        false_negatives = sum(
+            1 for r in results if r.expected and not r.detected
+        )  # Missed violations
 
+        # Precision: When we predict violation, how often are we right?
         precision = (
             true_positives / (true_positives + false_positives)
             if (true_positives + false_positives) > 0
             else 0
         )
+        # Recall: Of actual violations, how many did we catch?
         recall = (
             true_positives / (true_positives + false_negatives)
             if (true_positives + false_negatives) > 0
             else 0
         )
+        # F1 Score: Harmonic mean balances precision and recall
         f1_score = (
             2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
         )
@@ -396,6 +653,61 @@ def parse_prompt_metadata(prompt: str) -> dict[str, str]:
                 metadata[key.strip()] = value.strip()
 
     return metadata
+
+
+def _write_multi_config_report(multi_report: MultiConfigReport, output_path: str) -> None:
+    """Write detailed multi-config comparison report"""
+    import json
+
+    detailed_results: list[dict[str, Any]] = []
+
+    report_data = {
+        "summary": {
+            "total_configs": len(multi_report.config_results),
+            "evaluation_timestamp": str(__import__("datetime").datetime.now()),
+        },
+        "performance_matrix": multi_report.comparison_matrix,
+        "best_performers": multi_report.best_config_per_metric,
+        "detailed_results": detailed_results,
+    }
+
+    # Add detailed results for each config
+    for result in multi_report.config_results:
+        detailed = {
+            "config_name": result.config_name,
+            "config_path": result.config_path,
+            "metadata": result.metadata,
+            "metrics": {
+                "accuracy": result.report.accuracy,
+                "precision": result.report.precision,
+                "recall": result.report.recall,
+                "f1_score": result.report.f1_score,
+                "total_tests": result.report.total_tests,
+                "correct_predictions": result.report.correct_predictions,
+            },
+            "category_breakdown": result.report.results_by_category,
+            "failed_tests": [
+                {
+                    "test_id": test.test_id,
+                    "name": test.name,
+                    "expected": test.expected,
+                    "detected": test.detected,
+                    "confidence": test.confidence,
+                }
+                for test in result.report.failed_tests[:5]  # Limit to first 5 failures
+            ],
+        }
+        detailed_results.append(detailed)
+
+    # Statistical significance
+    report_data["statistical_significance"] = {
+        f"{pair[0]}_vs_{pair[1]}": metrics
+        for pair, metrics in multi_report.statistical_significance.items()
+    }
+
+    # Write JSON report
+    with open(output_path, "w") as f:
+        json.dump(report_data, f, indent=2, default=str)
 
 
 def enhance_prompt_with_llm(
@@ -499,7 +811,10 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="Examples:\n"
         "  %(prog)s --mode detection --platform web --focus accessibility\n"
-        "  %(prog)s --enhanced --platform android --focus security",
+        "  %(prog)s --enhanced --platform android --focus security\n"
+        "  %(prog)s --compare-prompts security.md accessibility.txt general.md\n"
+        "  %(prog)s --compare-prompts *.md --prompt-names Security Accessibility "
+        "General --output results.json",
     )
 
     parser.add_argument("--mode", choices=["detection", "generation", "both"], default="detection")
@@ -509,6 +824,19 @@ def main() -> None:
     parser.add_argument("--enhanced", action="store_true", help="Enhance with LLM")
     parser.add_argument("--output", help="Output file for report")
     parser.add_argument("--prompt-file", help="Prompt file to test")
+
+    # Multi-prompt comparison arguments
+    parser.add_argument(
+        "--compare-prompts", nargs="+", help="Compare multiple prompt files (.txt, .md)"
+    )
+    parser.add_argument("--prompt-names", nargs="+", help="Custom names for prompts (optional)")
+    parser.add_argument(
+        "--no-parallel",
+        action="store_false",
+        dest="parallel",
+        default=True,
+        help="Disable parallel evaluation",
+    )
 
     args = parser.parse_args()
 
@@ -521,6 +849,70 @@ def main() -> None:
 
     evaluator = PromptEvaluator()
 
+    # Handle multi-prompt comparison mode
+    if args.compare_prompts:
+        print("🔄 Multi-prompt comparison mode")
+        print(f"Prompts: {', '.join(args.compare_prompts)}")
+        print(f"Parallel: {args.parallel}")
+
+        # Build prompt config list
+        configs = []
+        prompt_names = args.prompt_names or []
+
+        for i, prompt_path in enumerate(args.compare_prompts):
+            # Extract filename without extension for default name
+            filename = Path(prompt_path).stem
+            prompt_name = prompt_names[i] if i < len(prompt_names) else filename
+
+            configs.append(
+                {
+                    "name": prompt_name,
+                    "path": prompt_path,
+                    "metadata": {
+                        "platform": args.platform,
+                        "focus": args.focus,
+                    },
+                }
+            )
+
+        effective_principles = args.principles
+        if args.focus:
+            effective_principles = [x.strip() for x in args.focus.split(",")]
+
+        if args.mode in ["detection", "both"]:
+            api_evaluator = APIEvaluator("openai", "gpt-4o", "https://api.openai.com/v1")
+
+            # Run multi-prompt evaluation
+            multi_report = evaluator.evaluate_multiple_configs(
+                configs, api_evaluator, effective_principles, args.parallel
+            )
+
+            # Print clean comparison results
+            print("\n📊 COMPARISON RESULTS")
+            print("=" * 60)
+
+            # Performance matrix with clean formatting
+            for config_name, metrics in multi_report.comparison_matrix.items():
+                print(
+                    f"{config_name:20} | Accuracy: {metrics['accuracy']:5.1%} | "
+                    f"Precision: {metrics['precision']:5.1%} | "
+                    f"Recall: {metrics['recall']:5.1%} | F1: {metrics['f1_score']:5.1%}"
+                )
+
+            # Overall best performer
+            best_f1_config = multi_report.best_config_per_metric.get("f1_score")
+            if best_f1_config:
+                best_f1_value = multi_report.comparison_matrix[best_f1_config]["f1_score"]
+                print(f"\n🏆 OVERALL BEST: {best_f1_config} (F1 Score: {best_f1_value:.1%})")
+
+            # Output detailed results if requested
+            if args.output:
+                _write_multi_config_report(multi_report, args.output)
+                print(f"\n📁 Detailed report written to: {args.output}")
+
+        return
+
+    # Single config mode (existing logic)
     if args.prompt_file:
         with open(args.prompt_file) as f:
             test_prompt = f.read()
