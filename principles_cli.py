@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
-"""
-Engineering Principles CLI - Generate custom prompts for AI workflows
-
-Usage examples:
-    python principles_cli.py review --platform web --focus security,accessibility
-    python principles_cli.py generate --platform android --component ui
-    python principles_cli.py architecture --platform web --layer data
-    python principles_cli.py dependencies --platform ios --check react-native
-"""
+"""Generate AI prompts for engineering standards"""
 
 import argparse
 import sys
@@ -24,7 +16,7 @@ class PrinciplesCLI:
         self.modules_path = self.base_path / "modules"
 
     def load_yaml(self, file_path: Path) -> dict[str, Any]:
-        """Load YAML file safely"""
+        """Load YAML safely"""
         try:
             with open(file_path) as f:
                 data = yaml.safe_load(f)
@@ -39,20 +31,15 @@ class PrinciplesCLI:
     def format_principles(
         self, principles: dict[str, Any], focus_areas: list[str] | None = None
     ) -> str:
-        """Format principles for prompt inclusion"""
+        """Format principles for prompt"""
         output = []
+        priority_text = "Security > Accessibility > Testing > Performance > Code Style"
+        output.append(f"**Priority Order:** {priority_text}\n")
 
-        # Add priority order
-        output.append(
-            "**Priority Order:** Security > Accessibility > Testing > Performance > Code Style\n"
-        )
-
-        # Handle case where principles might be a list or different structure
         if not isinstance(principles, dict):
             output.append("**Principles:** Unable to parse principles structure")
             return "\n".join(output)
 
-        # Map focus areas to relevant principles
         focus_to_principles = {
             "security": ["security"],
             "accessibility": ["accessibility"],
@@ -60,21 +47,12 @@ class PrinciplesCLI:
             "architecture": ["unidirectional_data_flow", "minimal_dependencies"],
             "performance": ["flexible_layout", "minimal_dependencies"],
             "code_style": ["code_consistency", "zero_todos", "zero_build_warnings"],
-            "localization": ["localization"],
-            "documentation": ["documentation"],
-            "design": ["design_integrity"],
-            "reviews": ["code_reviews"],
-            "ci": ["continuous_integration"],
         }
 
-        # Filter principles if focus areas specified
         if focus_areas:
-            # If focus_areas already contains principle names directly
-            # just use them as-is
             if all(area in principles for area in focus_areas):
                 filtered_principles = {k: v for k, v in principles.items() if k in focus_areas}
             else:
-                # Otherwise, map focus areas to principles
                 relevant_principles = set()
                 for area in focus_areas:
                     relevant_principles.update(focus_to_principles.get(area, [area]))
@@ -100,15 +78,6 @@ class PrinciplesCLI:
                 else:
                     output.append(f"- {how_items}")
 
-            if "enforcement" in principle:
-                enforcement = principle["enforcement"]
-                if isinstance(enforcement, dict):
-                    output.append("**Enforcement:**")
-                    for key, value in enforcement.items():
-                        output.append(f"- {key}: {value}")
-                else:
-                    output.append(f"**Enforcement:** {enforcement}")
-
             output.append("")
 
         return "\n".join(output)
@@ -129,14 +98,12 @@ class PrinciplesCLI:
                 if isinstance(deps, list):
                     for dep_info in deps:
                         if isinstance(dep_info, dict) and "name" in dep_info:
-                            # Detailed format (e.g., Android deps with name/purpose/version)
                             purpose = dep_info.get("purpose", "")
                             version = dep_info.get("version", "")
                             desc = f" - {purpose}" if purpose else ""
                             ver = f" v{version}" if version else ""
                             output.append(f"- {dep_info['name']}{ver}{desc} ({category})")
                         else:
-                            # Simple string format (e.g., iOS frameworks)
                             output.append(f"- {dep_info} ({category})")
             output.append("")
 
@@ -148,7 +115,6 @@ class PrinciplesCLI:
                         output.append(f"- {tool} ({category})")
                 else:
                     output.append(f"- {tools} ({category})")
-            output.append("")
 
         return "\n".join(output)
 
@@ -246,10 +212,232 @@ class PrinciplesCLI:
 
         return "\n".join(output)
 
+    def generate_review_prompt(self, platform: str, focus_areas: list[str]) -> str:
+        """Generate code review prompt"""
+
+        platform_title = {"ios": "iOS", "android": "Android", "web": "Web"}.get(
+            platform.lower(), platform.title()
+        )
+
+        # Load detection rules
+        rules = {}
+        for area in focus_areas:
+            detection_file = self.modules_path / "detection" / "rules" / f"{area}.yaml"
+            if detection_file.exists():
+                detection_data = self.load_yaml(detection_file)
+                rules[area] = detection_data.get("rules", {})
+
+        # Build detection sections
+        detection_sections = []
+        for area in focus_areas:
+            if area in rules:
+                output = [f"## {area.title()} Detection"]
+                for rule_name, rule_data in rules[area].items():
+                    if isinstance(rule_data, dict):
+                        severity = rule_data.get("severity", "unknown")
+                        description = rule_data.get("description", "")
+                        rule_title = rule_name.replace("_", " ").title()
+                        output.append(f"- **{rule_title}** ({severity}): {description}")
+                detection_sections.append("\n".join(output))
+
+        prompt = f"""<!-- PROMPT_METADATA
+platform: {platform}
+focus: {",".join(focus_areas)}
+mode: review
+-->
+
+# Code Review Assistant for {platform_title}
+
+Review code against standards. **Priority**: Security > Accessibility > Testing.
+
+{chr(10).join(detection_sections)}
+
+## Instructions
+
+1. Identify violations using patterns above
+2. Classify severity: Critical → Blocking → Required → Recommended
+3. Provide specific fixes with examples
+4. Focus on: {", ".join(focus_areas)}
+"""
+        return prompt
+
+    def generate_code_prompt(self, platform: str, component_type: str) -> str:
+        """Generate code writing prompt"""
+        platform_title = {"ios": "iOS", "android": "Android", "web": "Web"}.get(
+            platform.lower(), platform.title()
+        )
+
+        component_requirements = {
+            "ui": "Responsive design, semantic HTML, keyboard accessible",
+            "business-logic": "Pure functions, error handling, validation",
+            "data-layer": "API integration, caching, security",
+        }
+
+        prompt = f"""<!-- PROMPT_METADATA
+platform: {platform}
+component: {component_type}
+mode: generate
+-->
+
+# Code Generation for {platform_title} {component_type.title()}
+
+Generate production-ready code following standards.
+
+## Core Requirements
+- **Security**: HTTPS, encrypted data, no secrets
+- **Accessibility**: ARIA labels, WCAG 2.1 AA, keyboard nav
+- **Testing**: 80% coverage, testable architecture
+- **{component_type.title()}**: {
+            component_requirements.get(component_type, "Standard requirements")
+        }
+
+## Instructions
+1. Follow platform conventions
+2. Include TypeScript/type annotations
+3. Add error handling and loading states
+4. Make fully accessible
+5. Include relevant tests
+"""
+        return prompt
+
     def get_platform_title(self, platform: str) -> str:
-        """Get properly capitalized platform name"""
-        platform_titles = {"ios": "iOS", "android": "Android", "web": "Web"}
-        return platform_titles.get(platform.lower(), platform.title())
+        """Get formatted platform title"""
+        return {"ios": "iOS", "android": "Android", "web": "Web"}.get(
+            platform.lower(), platform.title()
+        )
+
+    def generate_dependency_prompt(self, platform: str, dependencies: list[str]) -> str:
+        """Generate dependency evaluation prompt"""
+        principles_data = self.load_yaml(self.core_path / "principles.yaml")
+        principles = principles_data.get("principles", principles_data)
+        platforms_data = self.load_yaml(self.core_path / "platforms.yaml")
+        platforms = platforms_data.get("platforms", platforms_data)
+
+        platform_config = platforms.get(platform, {})
+        approved_deps_config = platform_config.get("approved_dependencies", {})
+
+        # Extract actual dependency names from nested structure
+        approved_deps = []
+        dependency_details = {}
+        for _category, deps in approved_deps_config.items():
+            if isinstance(deps, list):
+                for dep_info in deps:
+                    if isinstance(dep_info, dict) and "name" in dep_info:
+                        dep_name = dep_info["name"]
+                        approved_deps.append(dep_name)
+                        dependency_details[dep_name.lower()] = dep_info
+
+        # Check status of requested dependencies
+        dependency_status = []
+        for dep in dependencies:
+            dep_lower = dep.lower()
+            is_approved = any(dep_lower in approved_name.lower() for approved_name in approved_deps)
+            status = "✅ APPROVED" if is_approved else "❌ NOT APPROVED"
+            dependency_status.append(f"- {dep} - {status}")
+
+            # Add details if approved
+            if is_approved:
+                for approved_name, details in dependency_details.items():
+                    if dep_lower in approved_name.lower():
+                        dependency_status.append(
+                            f"  - Purpose: {details.get('purpose', 'Not specified')}"
+                        )
+                        dependency_status.append(
+                            f"  - Version: {details.get('version', 'Not specified')}"
+                        )
+                        break
+
+        platform_title = self.get_platform_title(platform)
+
+        # Get minimal dependencies principle concisely
+        minimal_deps_principle = principles.get("minimal_dependencies", {})
+        minimal_deps_why = minimal_deps_principle.get(
+            "why", "We're responsible for maintaining every single line of code we ship"
+        )
+
+        prompt = f"""<!-- PROMPT_METADATA
+platform: {platform}
+dependencies: {",".join(dependencies)}
+mode: dependencies
+-->
+
+# Dependency Evaluation for {platform_title}
+
+Evaluate dependencies against Livefront's standards. **Principle**: {minimal_deps_why}
+
+## Dependency Status Check
+{chr(10).join(dependency_status)}
+
+## Approved Dependencies for {platform_title}
+{chr(10).join(f"- {dep}" for dep in approved_deps)}
+
+## Evaluation Criteria
+- **Security**: No vulnerabilities, regular updates, trustworthy maintainers
+- **Maintenance**: Active development, responsive to issues
+- **Alignment**: Fits architecture, compatible with stack, no duplication
+- **Impact**: Bundle size, performance, team learning curve
+
+## Instructions
+
+For each dependency, provide:
+1. **Security Assessment**: Known vulnerabilities, maintenance status
+2. **Alignment Analysis**: Architectural fit, duplication with existing code
+3. **Recommendation**: ✅ APPROVE, 🤔 REVIEW, or ❌ REJECT with rationale
+"""
+        return prompt
+
+    def generate_architecture_prompt(self, platform: str, layer: str) -> str:
+        """Generate architecture guidance prompt"""
+        principles_data = self.load_yaml(self.core_path / "principles.yaml")
+        principles = principles_data.get("principles", principles_data)
+        platforms_data = self.load_yaml(self.core_path / "platforms.yaml")
+        platforms = platforms_data.get("platforms", platforms_data)
+
+        platform_title = self.get_platform_title(platform)
+        platform_config = platforms.get(platform, {})
+
+        # Streamlined architecture principles
+        arch_principles = self._format_focused_architecture(
+            principles, ["unidirectional_data_flow", "minimal_dependencies", "testing"]
+        )
+
+        # Concise platform requirements
+        platform_reqs = self._format_concise_platform(platform_config, platform_title)
+
+        prompt = f"""<!-- PROMPT_METADATA
+platform: {platform}
+layer: {layer}
+mode: architecture
+-->
+
+# Architecture Assistant for {platform_title} {layer.title()} Layer
+
+Design systems following Livefront's architecture standards. **Priority**: Security > Testing.
+
+{arch_principles}
+
+{platform_reqs}
+
+## {layer.title()} Layer Guidelines
+- **Data Flow**: Unidirectional (data down, events up)
+- **State**: Views display state, never modify it
+- **Testing**: 80% coverage on business logic, testable architecture
+- **Dependencies**: Approved libraries only, document purpose/license
+
+## Instructions
+
+Design architecture that:
+1. **Follows unidirectional data flow**
+2. **Minimizes and justifies dependencies**
+3. **Enables comprehensive testing**
+4. **Handles all error states gracefully**
+
+Ask clarifying questions if you need more context to make a thorough evaluation.
+
+Provide specific structure and implementation recommendations.
+"""
+
+        return prompt
 
     def _format_focused_detection(self, area: str, rules: dict[str, Any]) -> str:
         """Format focused detection patterns for a specific area"""
@@ -359,7 +547,7 @@ class PrinciplesCLI:
 
             return filtered_rules
 
-        return rules  # type: ignore[no-any-return]
+        return dict(rules)
 
     def _format_concise_platform(self, platform_config: dict[str, Any], platform_title: str) -> str:
         """Format concise platform requirements"""
@@ -470,363 +658,34 @@ class PrinciplesCLI:
 
         return "\n".join(output)
 
-    def generate_review_prompt(self, platform: str, focus_areas: list[str]) -> str:
-        """Generate code review prompt"""
-        try:
-            # Load data
-            principles_data = self.load_yaml(self.core_path / "principles.yaml")
-            principles_data.get("principles", principles_data)  # Handle nested structure
-            platforms_data = self.load_yaml(self.core_path / "platforms.yaml")
-            platforms = platforms_data.get("platforms", platforms_data)  # Handle nested structure
-            severity_data = self.load_yaml(self.modules_path / "detection" / "severity.yaml")
-            severity_data.get("severity_levels", severity_data)  # Handle nested structure
-
-            # Load detection rules for focus areas with platform filtering
-            rules = {}
-            for area in focus_areas:
-                area_rules = self._load_detection_rules(area, platform)
-                if area_rules:
-                    rules[area] = area_rules
-
-            # Generate streamlined prompt with metadata header
-            platform_title = self.get_platform_title(platform)
-
-            # Build focused detection patterns for focus areas
-            detection_sections = []
-            for area in focus_areas:
-                if area in rules:
-                    detection_sections.append(self._format_focused_detection(area, rules[area]))
-        except Exception as e:
-            print(f"ERROR in generate_review_prompt: {e}")
-            import traceback
-
-            traceback.print_exc()
-            raise
-
-        # Platform requirements (concise)
-        platform_config = platforms.get(platform, {})
-        platform_reqs = self._format_concise_platform(platform_config, platform_title)
-
-        prompt = f"""<!-- PROMPT_METADATA
-platform: {platform}
-focus: {','.join(focus_areas)}
-mode: review
--->
-
-# Code Review Assistant for {platform_title}
-
-Review code against Livefront's standards. **Priority**: Security > Accessibility > Testing.
-
-{chr(10).join(detection_sections)}
-
-{platform_reqs}
-
-## Instructions
-
-1. **Start by identifying violations** using the patterns above, then find others
-2. **Classify severity**: Critical → Blocking → Required → Recommended
-3. **Provide specific fixes** with before/after examples
-4. **Focus on**: {", ".join(focus_areas)}
-
-Ask clarifying questions if you need more context to make a thorough evaluation.
-"""
-
-        return prompt
-
-    def generate_code_prompt(self, platform: str, component_type: str) -> str:
-        """Generate code writing prompt"""
-        # Load data
-        principles_data = self.load_yaml(self.core_path / "principles.yaml")
-        principles = principles_data.get("principles", principles_data)  # Handle nested structure
-
-        # Filter principles based on component type
-        component_to_principles = {
-            "ui": [
-                "accessibility",
-                "flexible_layout",
-                "design_integrity",
-                "localization",
-                "security",
-            ],
-            "business-logic": [
-                "testing",
-                "unidirectional_data_flow",
-                "minimal_dependencies",
-                "security",
-            ],
-            "data-layer": [
-                "testing",
-                "unidirectional_data_flow",
-                "minimal_dependencies",
-                "security",
-            ],
-        }
-
-        component_to_principles.get(component_type, list(principles.keys()))
-        self.load_yaml(self.core_path / "philosophy.yaml")
-        platforms_data = self.load_yaml(self.core_path / "platforms.yaml")
-        platforms = platforms_data.get("platforms", platforms_data)  # Handle nested structure
-
-        # Load generation guidance
-        guidance_file = self.modules_path / "generation" / "guidance.yaml"
-        if guidance_file.exists():
-            self.load_yaml(guidance_file)
-        else:
-            pass
-
-        platform_title = self.get_platform_title(platform)
-
-        # Platform requirements (concise)
-        platform_config = platforms.get(platform, {})
-        platform_reqs = self._format_concise_platform(platform_config, platform_title)
-
-        # Component-specific requirements based on type
-        component_focus = self._get_component_requirements(component_type)
-
-        prompt = f"""<!-- PROMPT_METADATA
-platform: {platform}
-component: {component_type}
-mode: generate
--->
-
-# Code Generation Assistant for {platform_title} {component_type.title()}
-
-Generate production-ready code following Livefront's standards.
-
-## Core Requirements
-- **Security**: HTTPS, encrypted data, no secrets in code
-- **Accessibility**: ARIA labels, WCAG 2.1 AA compliance, keyboard navigation
-- **Testing**: 80% coverage on business logic, testable architecture
-- **Performance**: Optimized for {platform_title}, handle loading/error states
-- **Architecture**: Unidirectional data flow, proper error handling
-
-{platform_reqs}
-
-## {component_type.title()} Component Guidelines
-{component_focus}
-
-## Instructions
-
-Generate code that:
-1. **Follows platform conventions** and approved dependencies
-2. **Includes proper TypeScript/type annotations**
-3. **Has comprehensive error handling** and loading states
-4. **Is fully accessible** with proper ARIA attributes
-5. **Includes relevant tests** for business logic
-
-Ask clarifying questions if you need more context to make a thorough evaluation.
-
-Explain architectural decisions and how they align with our principles.
-"""
-
-        return prompt
-
-    def generate_architecture_prompt(self, platform: str, layer: str) -> str:
-        """Generate architecture guidance prompt"""
-        principles_data = self.load_yaml(self.core_path / "principles.yaml")
-        principles = principles_data.get("principles", principles_data)  # Handle nested structure
-        platforms_data = self.load_yaml(self.core_path / "platforms.yaml")
-        platforms = platforms_data.get("platforms", platforms_data)  # Handle nested structure
-
-        platform_title = self.get_platform_title(platform)
-        platform_config = platforms.get(platform, {})
-
-        # Streamlined architecture principles
-        arch_principles = self._format_focused_architecture(
-            principles, ["unidirectional_data_flow", "minimal_dependencies", "testing"]
-        )
-
-        # Concise platform requirements
-        platform_reqs = self._format_concise_platform(platform_config, platform_title)
-
-        prompt = f"""<!-- PROMPT_METADATA
-platform: {platform}
-layer: {layer}
-mode: architecture
--->
-
-# Architecture Assistant for {platform_title} {layer.title()} Layer
-
-Design systems following Livefront's architecture standards. **Priority**: Security > Testing.
-
-{arch_principles}
-
-{platform_reqs}
-
-## {layer.title()} Layer Guidelines
-- **Data Flow**: Unidirectional (data down, events up)
-- **State**: Views display state, never modify it
-- **Testing**: 80% coverage on business logic, testable architecture
-- **Dependencies**: Approved libraries only, document purpose/license
-
-## Instructions
-
-Design architecture that:
-1. **Follows unidirectional data flow**
-2. **Minimizes and justifies dependencies**
-3. **Enables comprehensive testing**
-4. **Handles all error states gracefully**
-
-Ask clarifying questions if you need more context to make a thorough evaluation.
-
-Provide specific structure and implementation recommendations.
-"""
-
-        return prompt
-
-    def generate_dependency_prompt(self, platform: str, dependencies: list[str]) -> str:
-        """Generate dependency evaluation prompt"""
-        principles_data = self.load_yaml(self.core_path / "principles.yaml")
-        principles = principles_data.get("principles", principles_data)  # Handle nested structure
-        platforms_data = self.load_yaml(self.core_path / "platforms.yaml")
-        platforms = platforms_data.get("platforms", platforms_data)  # Handle nested structure
-
-        platform_config = platforms.get(platform, {})
-        approved_deps_config = platform_config.get("approved_dependencies", {})
-
-        # Extract actual dependency names from nested structure
-        approved_deps = []
-        dependency_details = {}
-        for _category, deps in approved_deps_config.items():
-            if isinstance(deps, list):
-                for dep_info in deps:
-                    if isinstance(dep_info, dict) and "name" in dep_info:
-                        dep_name = dep_info["name"]
-                        approved_deps.append(dep_name)
-                        dependency_details[dep_name.lower()] = dep_info
-
-        # Check status of requested dependencies
-        dependency_status = []
-        for dep in dependencies:
-            dep_lower = dep.lower()
-            is_approved = any(dep_lower in approved_name.lower() for approved_name in approved_deps)
-            status = "✅ APPROVED" if is_approved else "❌ NOT APPROVED"
-            dependency_status.append(f"- {dep} - {status}")
-
-            # Add details if approved
-            if is_approved:
-                for approved_name, details in dependency_details.items():
-                    if dep_lower in approved_name.lower():
-                        dependency_status.append(
-                            f"  - Purpose: {details.get('purpose', 'Not specified')}"
-                        )
-                        dependency_status.append(
-                            f"  - Version: {details.get('version', 'Not specified')}"
-                        )
-                        break
-
-        platform_title = self.get_platform_title(platform)
-
-        # Get minimal dependencies principle concisely
-        minimal_deps_principle = principles.get("minimal_dependencies", {})
-        minimal_deps_why = minimal_deps_principle.get(
-            "why", "We're responsible for maintaining every single line of code we ship"
-        )
-
-        prompt = f"""<!-- PROMPT_METADATA
-platform: {platform}
-dependencies: {','.join(dependencies)}
-mode: dependencies
--->
-
-# Dependency Evaluation for {platform_title}
-
-Evaluate dependencies against Livefront's standards. **Principle**: {minimal_deps_why}
-
-## Dependency Status Check
-{chr(10).join(dependency_status)}
-
-## Approved Dependencies for {platform_title}
-{chr(10).join(f"- {dep}" for dep in approved_deps)}
-
-## Evaluation Criteria
-- **Security**: No vulnerabilities, regular updates, trustworthy maintainers
-- **Maintenance**: Active development, responsive to issues
-- **Alignment**: Fits architecture, compatible with stack, no duplication
-- **Impact**: Bundle size, performance, team learning curve
-
-## Instructions
-
-For each dependency, provide:
-1. **Recommendation**: Approve/Reject/Conditional
-2. **Justification**: Alignment with principles
-3. **Alternatives**: Build ourselves or use approved deps?
-4. **Implementation**: Integration approach if approved
-
-Ask clarifying questions if you need more context to make a thorough evaluation.
-
-**Remember**: Build ourselves over external dependencies when reasonable.
-"""
-
-        return prompt
-
 
 def main() -> None:
     cli = PrinciplesCLI()
 
     parser = argparse.ArgumentParser(
-        description="""🚀 Livefront Engineering Principles CLI
-
-Generate AI prompts with integrated detection patterns for:
-• User prompts: Code review requests with 70%+ test coverage using YAML patterns
-• System prompts: AI assistant setup for code generation with platform standards
-• Architecture guidance: Unidirectional data flow and testing principles
-• Dependency evaluation: Assessment against approved libraries
-
-Enhanced mode available with eval_runner.py --enhanced (experimental)""",
+        description="Generate AI prompts for engineering standards",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-🔍 Examples:
-  %(prog)s review --platform web --focus security,accessibility    # User prompt
-  %(prog)s generate --platform android --component ui              # System prompt
-  %(prog)s architecture --platform web --layer data
-  %(prog)s dependencies --platform ios --check react-native,lodash
-
-💡 Usage Pattern:
-  1. Set system prompt: %(prog)s generate --platform web --component ui > system.txt
-  2. Use for reviews: %(prog)s review --platform web --focus security > review.txt
-        """,
     )
 
-    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+    subparsers = parser.add_subparsers(dest="command", help="Commands")
 
-    # Review command - generates user prompts
-    review_parser = subparsers.add_parser("review", help="Generate user prompt for code review")
+    review_parser = subparsers.add_parser("review", help="Generate review prompt")
     review_parser.add_argument("--platform", choices=["android", "ios", "web"], required=True)
-    review_parser.add_argument(
-        "--focus",
-        default="security,accessibility,testing",
-        help="Comma-separated focus areas",
-    )
+    review_parser.add_argument("--focus", default="security,accessibility,testing")
 
-    # Generate command - generates system prompts
-    generate_parser = subparsers.add_parser(
-        "generate", help="Generate system prompt for AI code assistant"
-    )
+    generate_parser = subparsers.add_parser("generate", help="Generate code prompt")
     generate_parser.add_argument("--platform", choices=["android", "ios", "web"], required=True)
-    generate_parser.add_argument(
-        "--component", default="ui", help="Component type (ui, business, data)"
+    generate_parser.add_argument("--component", default="ui")
+
+    architecture_parser = subparsers.add_parser("architecture", help="Generate architecture prompt")
+    architecture_parser.add_argument("--platform", choices=["android", "ios", "web"], required=True)
+    architecture_parser.add_argument(
+        "--layer", choices=["data", "ui", "business-logic"], default="data"
     )
 
-    # Architecture command
-    arch_parser = subparsers.add_parser(
-        "architecture", help="Generate architecture guidance prompt"
-    )
-    arch_parser.add_argument("--platform", choices=["android", "ios", "web"], required=True)
-    arch_parser.add_argument(
-        "--layer", default="data", help="Architecture layer (ui, business, data)"
-    )
-
-    # Dependencies command
-    deps_parser = subparsers.add_parser(
-        "dependencies", help="Generate dependency evaluation prompt"
-    )
-    deps_parser.add_argument("--platform", choices=["android", "ios", "web"], required=True)
-    deps_parser.add_argument(
-        "--check",
-        required=True,
-        help="Comma-separated list of dependencies to evaluate",
-    )
+    dependency_parser = subparsers.add_parser("dependency", help="Evaluate dependencies")
+    dependency_parser.add_argument("--platform", choices=["android", "ios", "web"], required=True)
+    dependency_parser.add_argument("dependencies", nargs="+", help="Dependencies to evaluate")
 
     args = parser.parse_args()
 
@@ -842,14 +701,16 @@ Enhanced mode available with eval_runner.py --enhanced (experimental)""",
             prompt = cli.generate_code_prompt(args.platform, args.component)
         elif args.command == "architecture":
             prompt = cli.generate_architecture_prompt(args.platform, args.layer)
-        elif args.command == "dependencies":
-            dependencies = args.check.split(",")
-            prompt = cli.generate_dependency_prompt(args.platform, dependencies)
+        elif args.command == "dependency":
+            prompt = cli.generate_dependency_prompt(args.platform, args.dependencies)
+        else:
+            parser.print_help()
+            return
 
         print(prompt)
 
     except Exception as e:
-        print(f"Error generating prompt: {e}", file=sys.stderr)
+        print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 
 
