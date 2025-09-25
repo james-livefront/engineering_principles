@@ -2,7 +2,7 @@
 
 A modular system for encoding and enforcing Livefront's engineering principles through AI-powered code detection and generation.
 
-## 🧪 Experimental Nature
+## Experimental Nature
 
 This project is an **ongoing experiment** in human-AI collaboration for code quality. Beyond the practical tool, it explores fundamental questions:
 
@@ -60,7 +60,7 @@ uv run python eval_runner.py --mode detection --platform web --focus security --
 
 LEAP uses a modular architecture that separates core knowledge from implementation details:
 
-```
+```text
 engineering_principles/
 ├── core/                    # Shared knowledge base
 │   ├── philosophy.yaml      # Core values and mantras
@@ -94,7 +94,7 @@ engineering_principles/
 - **Context-Sensitive**: Different rules for UI vs business logic vs data layer
 - **Severity-Based**: Critical, Blocking, Required, Recommended, Informational
 - **Comprehensive Detection**: 70%+ coverage with YAML-based regex patterns
-- **LLM Enhancement**: Cutting-edge rules + sophisticated analysis for 100% coverage
+- **LLM Enhancement**:  Rules + sophisticated analysis aiming for 100% coverage (aspirational; experimental layer may not always achieve perfect results)
 - **Multi-Layered Architecture**: Base patterns + enhanced intelligence + real-time updates
 
 ## Engineering Principles
@@ -129,17 +129,21 @@ engineering_principles/
 
 ## Detection Architecture
 
-Our comprehensive detection system provides **100% coverage** through a sophisticated multi-layered approach:
+Our comprehensive detection system aims for maximum coverage through a sophisticated multi-layered approach, combining objective pattern matching with experimental enhancements (note: 100% coverage is aspirational):
 
 ### **Base Detection Layer (70% Coverage)**
+
 **YAML-based regex patterns for objective violations:**
+
 - Security: Hardcoded secrets, insecure URLs, weak crypto, storage issues
 - Accessibility: Missing alt text, ARIA labels, touch targets, semantic HTML
 - Testing: Missing tests, flaky patterns, coverage issues
 - Architecture: Data flow violations, tight coupling, error handling
 
 ### **Enhanced Detection Layer (Experimental)**
+
 **LLM-powered intelligence that attempts to improve detection:**
+
 - **Latest Standards**: OWASP 2024, WCAG 2.2, framework-specific patterns
 - **Sophisticated Analysis**: Cross-file dependencies, contextual severity
 - **Advanced Patterns**: Multi-line detection, semantic code analysis
@@ -147,6 +151,7 @@ Our comprehensive detection system provides **100% coverage** through a sophisti
 - **Note**: Enhancement is experimental and may not always improve accuracy
 
 ### **Architecture Benefits**
+
 - **Reliable Core**: YAML patterns ensure consistent detection
 - **Experimental Enhancement**: LLM attempts to add latest practices
 - **No Tight Coupling**: Base patterns stay stable, enhancements evolve
@@ -162,6 +167,7 @@ The `principles_cli.py` script generates two types of AI prompts with integrated
 2. **User Prompts** (`review` command): Make specific requests within established context
 
 **Usage Pattern:**
+
 ```bash
 # Step 1: Set up AI assistant with system prompt
 python principles_cli.py generate --platform web --component ui > system.txt
@@ -170,18 +176,20 @@ python principles_cli.py generate --platform web --component ui > system.txt
 python principles_cli.py review --platform web --focus security > review.txt
 ```
 
-This separation allows maximum flexibility - configure domain-specific AI assistants once, then use targeted review prompts for specific tasks.
+This separation attempts maximum flexibility - configure domain-specific AI assistants once, then use targeted review prompts for specific tasks.
 
 ### **Enhancement Layers**
 
 **Base Layer** (Always Active):
+
 - Loads comprehensive detection patterns from `modules/detection/rules/`
 - Platform-specific filtering (web patterns vs Android vs iOS)
 - Severity-ordered rules (Critical → Blocking → Required → Recommended)
-- 70%+ test case coverage with objective pattern matching
+- ~70% test case coverage with objective pattern matching
 
 **Enhanced Layer** (`--enhanced` flag):
-- LLM attempts to add cutting-edge 2024/2025 detection capabilities
+
+- LLM attempts to add to-the-moment detection capabilities
 - Latest OWASP, WCAG 2.2, framework-specific intelligence
 - Sophisticated cross-file and contextual analysis techniques
 - Real-time updates for current vulnerabilities and best practices
@@ -311,6 +319,7 @@ mode: review
 ```
 
 The evaluation framework automatically:
+
 - Detects the platform and focus areas from prompt metadata
 - Filters test cases to match the prompt's context
 - Provides fair evaluations (web prompts tested only against web violations)
@@ -334,7 +343,7 @@ The evaluation framework shows **significant improvements** with our enhanced pr
 
 ### Setup & Configuration
 
-**1. Install Dependencies**
+#### 1. Install Dependencies
 
 This project uses `uv` for modern Python dependency management and virtual environments.
 
@@ -349,7 +358,7 @@ uv sync
 uv install
 ```
 
-**2. Set Up API Keys**
+#### 2. Set Up API Keys
 
 Create a `.env` file with your API keys:
 
@@ -747,43 +756,59 @@ This project uses modern Python tooling for development:
 git clone <repo-url>
 cd engineering_principles
 
-# Install all dependencies (production + development)
-uv sync
+# Quick setup using Makefile
+make install       # Install dependencies
+make install-hooks # Install pre-commit hooks (optional)
+make all          # Install + run all quality checks
 
-# Install pre-commit hooks (optional but recommended)
-uv run pre-commit install
+# Or use uv directly
+uv sync                          # Install all dependencies
+uv run pre-commit install       # Install pre-commit hooks (optional)
 ```
 
 ### Running Tests
 
 ```bash
-# Run all tests with coverage
-uv run pytest
+# Using Makefile (recommended)
+make test          # Run all tests
+make test-cov      # Run tests with coverage report
+make pre-commit    # Run all quality checks
 
-# Run tests in verbose mode
-uv run pytest -v
-
-# Run specific test file
-uv run pytest tests/test_eval_runner.py
-
-# Run with coverage report
-uv run pytest --cov-report=html
+# Or use uv directly
+uv run pytest                              # Run all tests
+uv run pytest -v                          # Verbose mode
+uv run pytest tests/test_eval_runner.py   # Specific test file
+uv run pytest --cov-report=html          # Coverage report
 ```
 
 ### Code Quality
 
 ```bash
-# Format code with black
-uv run black .
+# Using Makefile (recommended)
+make lint          # Check code style
+make lint-fix      # Auto-fix linting issues
+make format        # Format code with black + ruff
+make format-check  # Check formatting without changes
+make typecheck     # Run mypy type checking
+make pre-commit    # Run all quality checks
+make all          # Install deps + run all checks
 
-# Lint with ruff (auto-fix issues)
-uv run ruff check . --fix
+# Or use uv directly
+uv run black .                        # Format code
+uv run ruff check . --fix            # Lint with auto-fix
+uv run mypy .                         # Type checking
+uv run pre-commit run --all-files    # All quality checks
+```
 
-# Type checking with mypy
-uv run mypy . --ignore-missing-imports
+### Development Helpers
 
-# Run all quality checks
-uv run pre-commit run --all-files
+```bash
+make help          # Show all available commands
+make install       # Install project dependencies
+make clean         # Clean up generated files
+make watch         # Watch files and run tests on changes (requires fswatch)
+make install-hooks # Install pre-commit git hooks
+make ci           # Full CI pipeline (for GitHub Actions)
 ```
 
 ### Adding Dependencies
