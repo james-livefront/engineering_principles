@@ -3,7 +3,6 @@ Unit tests for eval_runner module.
 """
 
 import json
-import sys
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -220,7 +219,6 @@ class TestUtilityFunctions:
 
         try:
             # Change to temp directory and create .env file there
-            original_cwd = Path.cwd()
             temp_dir = Path(temp_path).parent
 
             with patch("os.chdir"):
@@ -265,6 +263,7 @@ class TestUtilityFunctions:
 
         # Create a temporary cache file
         import hashlib
+
         prompt_hash = hashlib.md5(prompt.encode()).hexdigest()
         cache_dir = Path(".cache")
         cache_dir.mkdir(exist_ok=True)
@@ -275,7 +274,9 @@ class TestUtilityFunctions:
             with open(cache_file, "w") as f:
                 f.write("Enhanced prompt from cache")
 
-            result = eval_runner.enhance_prompt_with_llm(prompt, mock_api_evaluator, show_diff=False)
+            result = eval_runner.enhance_prompt_with_llm(
+                prompt, mock_api_evaluator, show_diff=False
+            )
             assert result == "Enhanced prompt from cache"
         finally:
             if cache_file.exists():
@@ -298,13 +299,14 @@ class TestUtilityFunctions:
 
         # Ensure no cache file exists
         import hashlib
+
         prompt_hash = hashlib.md5(prompt.encode()).hexdigest()
         cache_dir = Path(".cache")
         cache_file = cache_dir / f"enhanced_{prompt_hash}.txt"
         if cache_file.exists():
             cache_file.unlink()
 
-        result = eval_runner.enhance_prompt_with_llm(prompt, mock_api_evaluator, show_diff=False)
+        result = eval_runner.enhance_prompt_with_llm(prompt, mock_api_evaluator, show_diff=False)  # type: ignore
         # Should return original prompt when enhancement fails
         assert result == prompt
 
@@ -319,8 +321,18 @@ class TestSmartContextDetection:
         # Mock test data with different platforms
         evaluator.detection_tests = {
             "security": [
-                {"id": "web-1", "name": "Web Security", "platform": "web", "expected": {"detected": True}},
-                {"id": "ios-1", "name": "iOS Security", "platform": "ios", "expected": {"detected": True}},
+                {
+                    "id": "web-1",
+                    "name": "Web Security",
+                    "platform": "web",
+                    "expected": {"detected": True},
+                },
+                {
+                    "id": "ios-1",
+                    "name": "iOS Security",
+                    "platform": "ios",
+                    "expected": {"detected": True},
+                },
             ]
         }
 
@@ -330,9 +342,6 @@ focus: security
 -->
 
 You are a code reviewer."""
-
-        # Mock the AI evaluator
-        mock_evaluator = lambda p: "I found security issues in this code."
 
         # This would normally run the evaluation, but we can't easily test the full flow
         # without more complex mocking. The important part is that the metadata parsing works.
@@ -351,7 +360,6 @@ class TestMainFunction:
         """Test main function in detection mode."""
         # Mock the evaluator classes
         mock_evaluator_instance = mock_prompt_evaluator.return_value
-        mock_api_instance = mock_api_evaluator.return_value
 
         # Mock the evaluation report
         mock_report = eval_runner.EvaluationReport(
@@ -373,15 +381,23 @@ class TestMainFunction:
         mock_prompt_evaluator.assert_called_once()
         mock_api_evaluator.assert_called_once_with("openai", "gpt-4o", "https://api.openai.com/v1")
 
-    @patch("sys.argv", ["eval_runner.py", "--mode", "detection", "--principles", "security,accessibility"])
+    @patch(
+        "sys.argv",
+        ["eval_runner.py", "--mode", "detection", "--principles", "security,accessibility"],
+    )
     @patch("eval_runner.PromptEvaluator")
     def test_main_with_principles(self, mock_prompt_evaluator: Any) -> None:
         """Test main function with specific principles."""
         mock_evaluator_instance = mock_prompt_evaluator.return_value
         mock_report = eval_runner.EvaluationReport(
-            total_tests=5, correct_predictions=4, accuracy=0.8,
-            precision=0.8, recall=0.8, f1_score=0.8,
-            results_by_category={}, failed_tests=[]
+            total_tests=5,
+            correct_predictions=4,
+            accuracy=0.8,
+            precision=0.8,
+            recall=0.8,
+            f1_score=0.8,
+            results_by_category={},
+            failed_tests=[],
         )
         mock_evaluator_instance.evaluate_detection_prompt.return_value = mock_report
 
@@ -392,7 +408,9 @@ class TestMainFunction:
         mock_evaluator_instance.evaluate_detection_prompt.assert_called()
 
     @patch("builtins.open", side_effect=FileNotFoundError)
-    @patch("sys.argv", ["eval_runner.py", "--mode", "detection", "--prompt-file", "nonexistent.txt"])
+    @patch(
+        "sys.argv", ["eval_runner.py", "--mode", "detection", "--prompt-file", "nonexistent.txt"]
+    )
     def test_main_missing_prompt_file(self, mock_open: Any) -> None:
         """Test main function with missing prompt file."""
         with pytest.raises(FileNotFoundError):

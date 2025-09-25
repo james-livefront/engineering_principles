@@ -26,46 +26,46 @@ help:
 
 # Setup targets
 install:
-	@echo "📦 Installing dependencies..."
+	@echo "Installing dependencies..."
 	uv sync
 
 # Quality assurance targets
 test:
-	@echo "🧪 Running tests..."
+	@echo "Running tests..."
 	uv run pytest
 
 test-cov:
-	@echo "🧪 Running tests with coverage..."
+	@echo "Running tests with coverage..."
 	uv run pytest --cov-report=term-missing --cov-report=html
 
 lint:
-	@echo "🔍 Running linter..."
+	@echo "Running linter..."
 	uv run ruff check .
 
 lint-fix:
-	@echo "🔧 Running linter with auto-fix..."
+	@echo "Running linter with auto-fix..."
 	uv run ruff check . --fix
 
 format:
-	@echo "✨ Formatting code..."
+	@echo "Formatting code..."
 	uv run black .
 	uv run ruff format .
 
 format-check:
-	@echo "✨ Checking code formatting..."
+	@echo "Checking code formatting..."
 	uv run black --check .
 	uv run ruff format --check .
 
 typecheck:
-	@echo "🔬 Running type checker..."
+	@echo "Running type checker..."
 	uv run mypy .
 
 pre-commit: lint format typecheck test
-	@echo "✅ All quality checks passed!"
+	@echo "All quality checks passed!"
 
 # Maintenance targets
 clean:
-	@echo "🧹 Cleaning up..."
+	@echo "Cleaning up..."
 	rm -rf .pytest_cache/
 	rm -rf .mypy_cache/
 	rm -rf .coverage
@@ -74,11 +74,11 @@ clean:
 	find . -type f -name "*.pyc" -delete
 
 all: install pre-commit
-	@echo "✅ Full pipeline completed!"
+	@echo "Full pipeline completed!"
 
 # CI/CD target
 ci: install pre-commit
-	@echo "🚀 CI pipeline completed!"
+	@echo "CI pipeline completed!"
 
 # Development helpers
 watch:

@@ -51,7 +51,6 @@ class DetectionResponse(TypedDict):
     message: str
 
 
-
 @dataclass
 class TestResult:
     test_id: str
@@ -66,8 +65,16 @@ class TestResult:
 
 # Detection configuration constants
 VIOLATION_INDICATORS = [
-    "violation", "issue", "problem", "error", "warning",
-    "fix", "should", "must", "missing", "incorrect"
+    "violation",
+    "issue",
+    "problem",
+    "error",
+    "warning",
+    "fix",
+    "should",
+    "must",
+    "missing",
+    "incorrect",
 ]
 CONFIDENCE_THRESHOLD = 3
 MIN_INDICATORS_FOR_DETECTION = 2
@@ -75,8 +82,8 @@ MIN_INDICATORS_FOR_DETECTION = 2
 
 class AIEvaluator(Protocol):
     """Protocol for AI evaluators"""
-    def evaluate_code(self, prompt: str) -> str:
-        ...
+
+    def evaluate_code(self, prompt: str) -> str: ...
 
 
 @dataclass
@@ -97,7 +104,7 @@ class PromptEvaluator:
         self.detection_tests = self._load_detection_tests()
         self.generation_tests = self._load_generation_tests()
 
-    def _load_detection_tests(self) -> dict[str, list[dict]]:
+    def _load_detection_tests(self) -> dict[str, list[dict[str, Any]]]:
         """Load detection test cases"""
         tests = {}
         detection_dir = self.base_path / "evals" / "detection"
@@ -115,7 +122,7 @@ class PromptEvaluator:
 
         return tests
 
-    def _load_generation_tests(self) -> dict[str, list[dict]]:
+    def _load_generation_tests(self) -> dict[str, list[dict[str, Any]]]:
         """Load generation test cases"""
         tests = {}
         generation_dir = self.base_path / "evals" / "generation"
@@ -132,6 +139,7 @@ class PromptEvaluator:
                     print(f"Error loading {test_file}: {e}")
 
         return tests
+
     def evaluate_detection_prompt(
         self,
         prompt: str,
@@ -152,7 +160,7 @@ class PromptEvaluator:
 
         # Log Smart Context Detection activation
         if metadata:
-            print(f"🎯 Smart Context Detection activated:")
+            print("🎯 Smart Context Detection activated:")
             if prompt_platform:
                 print(f"   Platform: {prompt_platform}")
             if prompt_focus:
@@ -173,13 +181,16 @@ class PromptEvaluator:
             filtered_test_cases = test_cases
             if prompt_platform:
                 filtered_test_cases = [
-                    tc for tc in test_cases
-                    if tc.get("category", "").lower() == prompt_platform.lower() or
-                       "platform" not in tc or
-                       tc.get("platform", "").lower() == prompt_platform.lower()
+                    tc
+                    for tc in test_cases
+                    if tc.get("category", "").lower() == prompt_platform.lower()
+                    or "platform" not in tc
+                    or tc.get("platform", "").lower() == prompt_platform.lower()
                 ]
                 if filtered_test_cases != test_cases:
-                    print(f"  Filtered to {len(filtered_test_cases)}/{len(test_cases)} test cases for platform '{prompt_platform}'")
+                    platform_msg = f"platform '{prompt_platform}'"
+                    count_msg = f"{len(filtered_test_cases)}/{len(test_cases)} test cases"
+                    print(f"  Filtered to {count_msg} for {platform_msg}")
 
             principle_results: list[TestResult] = []
             for test_case in filtered_test_cases:
@@ -199,8 +210,9 @@ class PromptEvaluator:
             }
 
         return self._calculate_evaluation_report(all_results, category_stats)
+
     def _run_detection_test(
-        self, prompt: str, test_case: dict, ai_evaluator: AIEvaluator
+        self, prompt: str, test_case: dict[str, Any], ai_evaluator: AIEvaluator
     ) -> TestResult:
         """Run single detection test"""
         try:
@@ -239,13 +251,15 @@ class PromptEvaluator:
                 correct=False,
                 details={"error": str(e)},
             )
-    def _parse_detection_response(self, ai_response: str, test_case: dict) -> dict:
+
+    def _parse_detection_response(
+        self, ai_response: str, test_case: dict[str, Any]
+    ) -> dict[str, Any]:
         """Parse AI response for violations using detection constants"""
         response_lower = ai_response.lower()
 
         found_indicators = sum(
-            1 for indicator in VIOLATION_INDICATORS
-            if indicator in response_lower
+            1 for indicator in VIOLATION_INDICATORS if indicator in response_lower
         )
 
         detected = found_indicators >= MIN_INDICATORS_FOR_DETECTION
@@ -298,6 +312,7 @@ class PromptEvaluator:
             results_by_category=category_stats,
             failed_tests=failed_tests,
         )
+
 
 class APIEvaluator:
     """API-based code evaluator implementing AIEvaluator protocol"""
@@ -482,9 +497,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Test prompt effectiveness against test cases",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="Examples:\n  %(prog)s --mode detection --platform web --focus accessibility\n  %(prog)s --enhanced --platform android --focus security"
+        epilog="Examples:\n"
+        "  %(prog)s --mode detection --platform web --focus accessibility\n"
+        "  %(prog)s --enhanced --platform android --focus security",
     )
-    
+
     parser.add_argument("--mode", choices=["detection", "generation", "both"], default="detection")
     parser.add_argument("--principles", nargs="*", help="Principles to test")
     parser.add_argument("--platform", choices=["android", "ios", "web"])
@@ -523,14 +540,16 @@ def main() -> None:
     if args.mode in ["detection", "both"]:
         api_evaluator = APIEvaluator("openai", "gpt-4o", "https://api.openai.com/v1")
 
-        report = evaluator.evaluate_detection_prompt(test_prompt, api_evaluator, effective_principles)
-        
+        report = evaluator.evaluate_detection_prompt(
+            test_prompt, api_evaluator, effective_principles
+        )
+
         # Simple report output
         print(f"\nResults: {report.accuracy:.2%} accuracy")
         print(f"Precision: {report.precision:.2%}")
         print(f"Recall: {report.recall:.2%}")
         print(f"F1 Score: {report.f1_score:.2%}")
-        
+
         if args.output:
             with open(args.output, "w") as f:
                 f.write(f"Accuracy: {report.accuracy:.2%}\n")
