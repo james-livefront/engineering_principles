@@ -12,6 +12,7 @@
 - [x] Streamlined prompt formatting (50% size reduction)
 - [x] Multi-layered detection architecture (base + enhanced)
 - [x] Comprehensive documentation and examples
+- [x] Evaluation metrics documentation (accuracy, precision, recall, F1 score)
 
 ## TODO
 
@@ -36,23 +37,28 @@
 
 - [ ] Expand test cases for edge scenarios
 - [ ] Add regression tests for new principles
-- [ ] Improve evaluation metrics (precision/recall per severity)
+- [x] Improve evaluation metrics (precision/recall per severity) - See `docs/evaluation-metrics.md`
+- [x] Multi-config comparison and auto-merge functionality - Parallel evaluation with statistical analysis
+- [ ] Automated output comparison for generated prompts
 
 ### Test Suite Enhancements
 
-**Integration Testing**
+#### Integration Testing
+
 - [ ] End-to-end prompt generation workflow tests
 - [ ] Smart Context Detection metadata integration validation
 - [ ] Cross-platform prompt consistency verification
 - [ ] YAML rule integration with CLI command testing
 
-**File I/O Testing**
+#### File I/O Testing
+
 - [ ] Edge case handling for malformed YAML files
 - [ ] Permission error scenarios and graceful degradation
 - [ ] Large file handling and performance validation
 - [ ] Directory traversal and file discovery testing
 
-**Platform Coverage Testing**
+#### Platform Coverage Testing
+
 - [ ] All platform combinations (iOS/Android/Web) with all principle types
 - [ ] Platform-specific rule application verification
 - [ ] Cross-platform metadata inheritance testing
