@@ -1,4 +1,4 @@
-# LEAP - Livefront Engineering Automated Principles
+# LEAP - Livefront Engineering Automated Principles 🐸
 
 A modular system for encoding and enforcing Livefront's engineering principles through AI-powered code detection and generation.
 
@@ -10,7 +10,7 @@ This project is an **ongoing experiment** in human-AI collaboration for code qua
 - **Evaluation**: What makes a good eval for engineering principles prompts? How do we measure success?
 - **Balance**: Where's the line between hard-coded rules (YAML patterns) vs letting LLMs research and decide?
 
-The answers aren't clear yet - LEAP represents our current best attempt at finding the right balance.
+The answers aren't clear yet - LEAP represents an inital attempt at finding the right balance.
 
 ## Philosophy
 
@@ -46,7 +46,7 @@ uv run python principles_cli.py generate --platform android --component business
 uv run python principles_cli.py architecture --platform web
 
 # » Evaluate dependency approval
-uv run python principles_cli.py dependencies --platform web --check react,typescript
+uv run python principles_cli.py dependency --platform web react typescript
 
 # » Test prompt effectiveness (requires API keys in .env)
 cp .env.example .env  # Edit with your API keys
@@ -254,12 +254,12 @@ Generate architectural guidance for specific layers.
 uv run python principles_cli.py architecture --platform <platform> --layer <layer>
 ```
 
-#### `dependencies` - Dependency Evaluation
+#### `dependency` - Dependency Evaluation
 
 Generate prompts for evaluating third-party dependencies.
 
 ```bash
-uv run python principles_cli.py dependencies --platform <platform> --check <deps>
+uv run python principles_cli.py dependency --platform <platform> <dependency1> <dependency2> ...
 ```
 
 ### Platform-Specific Considerations
@@ -682,7 +682,7 @@ uv run python eval_runner.py --mode generation --categories ui_component --outpu
 
 ```bash
 # Check if a new dependency aligns with principles
-uv run python principles_cli.py dependencies --platform web --check some-new-library
+uv run python principles_cli.py dependency --platform web some-new-library
 
 # Output includes:
 # - Build vs buy analysis
