@@ -33,7 +33,7 @@ cd engineering_principles
 # Install dependencies
 uv sync
 
-# » Generate comprehensive code review prompts
+# » Generate code review prompts
 uv run python principles_cli.py review --platform web --focus security
 uv run python principles_cli.py review --platform android --focus accessibility,testing
 uv run python principles_cli.py review --platform ios --focus architecture
@@ -52,7 +52,7 @@ uv run python principles_cli.py dependencies --platform web --check react,typesc
 cp .env.example .env  # Edit with your API keys
 uv run python eval_runner.py --mode detection --platform web --focus accessibility
 
-# » Enhanced mode attempts to improve detection with cutting-edge intelligence
+# » Improved mode attempts to increase detection with LLM analysis
 uv run python eval_runner.py --mode detection --platform web --focus security --enhanced
 ```
 
@@ -93,9 +93,9 @@ engineering_principles/
 - **Platform-Aware**: Android, iOS, and Web-specific guidance
 - **Context-Sensitive**: Different rules for UI vs business logic vs data layer
 - **Severity-Based**: Critical, Blocking, Required, Recommended, Informational
-- **Comprehensive Detection**: 70%+ coverage with YAML-based regex patterns
-- **LLM Enhancement**:  Rules + sophisticated analysis aiming for 100% coverage (aspirational; experimental layer may not always achieve perfect results)
-- **Multi-Layered Architecture**: Base patterns + enhanced intelligence + real-time updates
+- **Pattern-Based Detection**: 70%+ coverage with YAML-based regex patterns
+- **LLM Layer**: Rules + AI analysis targeting 100% coverage (experimental; may introduce false positives)
+- **Multi-Layered Architecture**: Base patterns + AI analysis + real-time updates
 
 ## Engineering Principles
 
@@ -129,7 +129,7 @@ engineering_principles/
 
 ## Detection Architecture
 
-Our comprehensive detection system aims for maximum coverage through a sophisticated multi-layered approach, combining objective pattern matching with experimental enhancements (note: 100% coverage is aspirational):
+The detection system uses multiple layers: objective pattern matching combined with optional AI analysis.
 
 ### **Base Detection Layer (70% Coverage)**
 
@@ -182,18 +182,18 @@ This separation attempts maximum flexibility - configure domain-specific AI assi
 
 **Base Layer** (Always Active):
 
-- Loads comprehensive detection patterns from `modules/detection/rules/`
+- Loads detection patterns from `modules/detection/rules/`
 - Platform-specific filtering (web patterns vs Android vs iOS)
 - Severity-ordered rules (Critical → Blocking → Required → Recommended)
 - ~70% test case coverage with objective pattern matching
 
-**Enhanced Layer** (`--enhanced` flag):
+**AI Analysis Layer** (`--enhanced` flag):
 
 - LLM attempts to add to-the-moment detection capabilities
 - Latest OWASP, WCAG 2.2, framework-specific intelligence
-- Sophisticated cross-file and contextual analysis techniques
+- Cross-file and contextual analysis techniques
 - Real-time updates for current vulnerabilities and best practices
-- **Note**: Experimental - aims for comprehensive coverage but may introduce false positives
+- **Note**: Experimental - targets higher coverage but may introduce false positives
 
 ### Basic Commands
 
@@ -304,7 +304,7 @@ Available focus areas for the `--focus` parameter:
 
 ## Evaluation Framework
 
-Test the effectiveness of generated prompts using comprehensive test cases with real AI models.
+Test the effectiveness of generated prompts using test cases with real AI models.
 
 ### Smart Context Detection
 
@@ -326,20 +326,20 @@ The evaluation framework automatically:
 
 ### **Performance Metrics**
 
-The evaluation framework shows **significant improvements** with our enhanced prompt generation:
+The evaluation framework shows improvements with rule-based prompt generation:
 
 | Mode | Accuracy | Precision | Recall | F1 Score |
 |------|----------|-----------|--------|----------|
 | **Basic Principles** | 60% | 75% | 75% | 75% |
-| **Enhanced (Default)** | **85%** | **84%** | **100%** | **91%** |
+| **Rule-Based (Default)** | 85% | 84% | 100% | 91% |
 | **LLM Enhanced** | 80% | 88% | 88% | 88% |
 
 **Key Improvements:**
 
-- **+25% accuracy** with rule-based enhancement (now default)
-- **Perfect recall** - catches all actual violations
-- **Excellent F1 scores** - balanced precision and recall
-- **Category specific**: 80% security detection, 90% accessibility detection
+- +25% accuracy with rule-based approach (now default)
+- 100% recall - catches all actual violations
+- 91% F1 score - balanced precision and recall
+- Category specific: 80% security detection, 90% accessibility detection
 
 ### Setup & Configuration
 
@@ -443,7 +443,7 @@ uv run python eval_runner.py --mode detection --prompt-file prompt.txt --enhance
 **Specific Principles:**
 
 ```bash
-# Test only security and accessibility (default enhanced)
+# Test only security and accessibility (default improved)
 uv run python eval_runner.py --mode detection --principles security,accessibility
 
 # Test with LLM enhancement for latest practices
@@ -665,14 +665,14 @@ uv run python eval_runner.py --prompt-file review_prompt.txt --mode detection
 ### Testing Prompt Effectiveness
 
 ```bash
-# Test default enhanced prompts (85% accuracy)
+# Test default improved prompts (85% accuracy)
 uv run python eval_runner.py --mode detection --principles security,accessibility --output baseline.md
 
 # Test with latest security/accessibility practices
-uv run python eval_runner.py --mode detection --principles security,accessibility --enhanced --output llm_enhanced.md
+uv run python eval_runner.py --mode detection --principles security,accessibility --enhanced --output llm_analysis.md
 
-# Compare enhancement modes
-diff baseline.md llm_enhanced.md
+# Compare detection modes
+diff baseline.md llm_analysis.md
 
 # Test generation prompts create compliant code
 uv run python eval_runner.py --mode generation --categories ui_component --output generation_report.md
@@ -701,7 +701,7 @@ uv run python principles_cli.py dependencies --platform web --check some-new-lib
 - **"API key required"**: Check config file, environment variables, or use `--api-key`
 - **"Error calling API"**: Verify API key, check credits/rate limits, test internet connection
 - **"Model not found"**: Use `--list-providers` to see available models
-- **Low accuracy scores**: Try `--enhanced` flag for LLM-enhanced prompts with latest practices
+- **Low accuracy scores**: Try `--enhanced` flag for LLM-improved prompts with latest practices
 
 **CLI Issues:**
 
@@ -883,7 +883,7 @@ uv run python principles_cli.py review --platform web --focus security > securit
 # 2. Test effectiveness against your codebase
 uv run python eval_runner.py --prompt-file security_prompt.md --mode detection
 
-# 3. Use enhanced mode for cutting-edge coverage
+# 3. Use improved mode for cutting-edge coverage
 uv run python eval_runner.py --prompt-file security_prompt.md --enhanced --mode detection
 ```
 
@@ -905,7 +905,7 @@ uv run python eval_runner.py --mode detection --enhanced --output results.json
 - **Base Detection**: 70%-85% accuracy on engineering principle violations
 - **Enhanced Mode**: Experimental - attempts to improve detection with LLM intelligence
 - **Platform Coverage**: Android, iOS, Web with platform-specific patterns
-- **Evaluation Speed**: ~30s base mode, ~60s enhanced mode per focus area
+- **Evaluation Speed**: ~30s base mode, ~60s improved mode per focus area
 - **Pattern Library**: 100+ regex patterns across security, accessibility, testing, architecture
 
 ### Contributing
