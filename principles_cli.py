@@ -6,55 +6,41 @@ import sys
 from pathlib import Path
 from typing import Any
 
-import yaml
+from leap import LeapLoader
+from leap.filters import filter_principles_by_focus, map_focus_areas_to_enforcement_stages
 
 
 class PrinciplesCLI:
     def __init__(self) -> None:
-        self.base_path = Path(__file__).parent
-        self.core_path = self.base_path / "core"
-        self.modules_path = self.base_path / "modules"
+        self.loader = LeapLoader()
+        # Keep these for backwards compatibility with any direct access
+        self.base_path = self.loader.base_path
+        self.core_path = self.loader.core_path
+        self.modules_path = self.loader.modules_path
 
     def load_yaml(self, file_path: Path) -> dict[str, Any]:
-        """Load YAML safely"""
-        try:
-            with open(file_path) as f:
-                data = yaml.safe_load(f)
-                return dict(data) if data is not None else {}
-        except FileNotFoundError:
-            print(f"Error: File not found: {file_path}")
-            sys.exit(1)
-        except yaml.YAMLError as e:
-            print(f"Error parsing YAML: {e}")
-            sys.exit(1)
+        """Load YAML safely - delegates to loader"""
+        return self.loader.load_yaml(file_path)
 
     def load_principles(self) -> dict[str, Any]:
-        """Load principles.yaml"""
-        data = self.load_yaml(self.core_path / "principles.yaml")
-        principles = data.get("principles", data)
-        return principles if isinstance(principles, dict) else {}
+        """Load principles.yaml - delegates to loader"""
+        return self.loader.load_principles()
 
     def load_platforms(self) -> dict[str, Any]:
-        """Load platforms.yaml"""
-        data = self.load_yaml(self.core_path / "platforms.yaml")
-        platforms = data.get("platforms", data)
-        return platforms if isinstance(platforms, dict) else {}
+        """Load platforms.yaml - delegates to loader"""
+        return self.loader.load_platforms()
 
     def load_philosophy(self) -> dict[str, Any]:
-        """Load philosophy.yaml"""
-        return self.load_yaml(self.core_path / "philosophy.yaml")
+        """Load philosophy.yaml - delegates to loader"""
+        return self.loader.load_philosophy()
 
     def load_enforcement(self) -> dict[str, Any]:
-        """Load enforcement.yaml"""
-        return self.load_yaml(self.core_path / "enforcement.yaml")
+        """Load enforcement.yaml - delegates to loader"""
+        return self.loader.load_enforcement()
 
     def get_common_prompt_data(self, platform: str) -> tuple[dict[str, Any], str, dict[str, Any]]:
-        """Get common data needed by most prompt generation methods"""
-        principles = self.load_principles()
-        platform_title = self.get_platform_title(platform)
-        platforms = self.load_platforms()
-        platform_config = platforms.get(platform, {})
-        return principles, platform_title, platform_config
+        """Get common data needed by most prompt generation methods - delegates to loader"""
+        return self.loader.get_common_prompt_data(platform)
 
     def format_principles(
         self, principles: dict[str, Any], focus_areas: list[str] | None = None
@@ -68,25 +54,13 @@ class PrinciplesCLI:
             output.append("**Principles:** Unable to parse principles structure")
             return "\n".join(output)
 
-        focus_to_principles = {
-            "security": ["security"],
-            "accessibility": ["accessibility"],
-            "testing": ["testing"],
-            "architecture": ["unidirectional_data_flow", "minimal_dependencies"],
-            "performance": ["flexible_layout", "minimal_dependencies"],
-            "code_style": ["code_consistency", "zero_todos", "zero_build_warnings"],
-        }
-
         if focus_areas:
             if all(area in principles for area in focus_areas):
+                # Direct principle names provided
                 filtered_principles = {k: v for k, v in principles.items() if k in focus_areas}
             else:
-                relevant_principles = set()
-                for area in focus_areas:
-                    relevant_principles.update(focus_to_principles.get(area, [area]))
-                filtered_principles = {
-                    k: v for k, v in principles.items() if k in relevant_principles
-                }
+                # Use shared filter function
+                filtered_principles = filter_principles_by_focus(principles, focus_areas)
         else:
             filtered_principles = principles
 
@@ -331,21 +305,8 @@ After your review, the following automated checks will run:
         ci_pipeline = enforcement.get("enforcement_tools", {}).get("ci_pipeline", {})
         stages = ci_pipeline.get("stages", [])
 
-        # Map focus areas to relevant CI stages
-        focus_to_stages = {
-            "security": ["security"],
-            "testing": ["test"],
-            "code_quality": ["lint"],
-            "accessibility": ["lint"],
-            "architecture": ["build", "lint"],
-        }
-
-        relevant_stages = set()
-        for area in focus_areas:
-            relevant_stages.update(focus_to_stages.get(area, []))
-
-        if not relevant_stages:
-            relevant_stages = {"lint", "test", "security"}  # Defaults
+        # Use shared filter function for CI stage mapping
+        relevant_stages = map_focus_areas_to_enforcement_stages(focus_areas)
 
         for stage in stages:
             stage_name = stage.get("name", "")
@@ -475,10 +436,8 @@ Generate production-ready code following Livefront engineering standards.
         return prompt
 
     def get_platform_title(self, platform: str) -> str:
-        """Get formatted platform title"""
-        return {"ios": "iOS", "android": "Android", "web": "Web"}.get(
-            platform.lower(), platform.title()
-        )
+        """Get formatted platform title - delegates to loader"""
+        return self.loader.get_platform_title(platform)
 
     def generate_dependency_prompt(self, platform: str, dependencies: list[str]) -> str:
         """Generate dependency evaluation prompt"""
