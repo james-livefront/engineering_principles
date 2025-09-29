@@ -2,7 +2,6 @@
 Unit tests for principles_cli module.
 """
 
-import sys
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -362,7 +361,7 @@ class TestGenerateReviewPrompt:
         # Check for main content (format may have changed)
         assert "# Code Review Assistant for Web" in result
         assert "## Instructions" in result
-        assert "Focus on: security" in result
+        assert "Focus on**: security" in result
 
     @patch("principles_cli.PrinciplesCLI.load_yaml")
     def test_generate_review_prompt_missing_rule_file(self, mock_load_yaml: Any) -> None:
@@ -387,7 +386,7 @@ class TestGenerateReviewPrompt:
 
         # Check for main content
         assert "# Code Review Assistant for iOS" in result
-        assert "Focus on: nonexistent" in result
+        assert "Focus on**: nonexistent" in result
 
 
 class TestGenerateCodePrompt:
@@ -446,8 +445,8 @@ class TestGenerateCodePrompt:
 
         # The current implementation may not have the same filtering logic
         # Just check that it's a valid prompt
-        assert "# Code Generation for Android" in result
-        assert "## Core Requirements" in result
+        assert "# Code Generation for Android Ui" in result
+        assert "## Engineering Principles" in result
 
     @patch("principles_cli.PrinciplesCLI.load_yaml")
     def test_generate_code_prompt_business_logic_filtering(self, mock_load_yaml: Any) -> None:
@@ -479,8 +478,8 @@ class TestGenerateCodePrompt:
 
         # The current implementation may not have the same filtering logic
         # Just check that it's a valid prompt
-        assert "# Code Generation for Android" in result
-        assert "## Core Requirements" in result
+        assert "# Code Generation for Android Business-Logic" in result
+        assert "## Engineering Principles" in result
 
 
 class TestArchitecturePrompt:
@@ -569,39 +568,49 @@ class TestMainFunction:
         mock_generate_review.return_value = "Generated review prompt"
 
         from principles_cli import main
+
         main()
 
         mock_generate_review.assert_called_once_with("web", ["security"])
 
-    @patch("sys.argv", ["principles_cli.py", "generate", "--platform", "android", "--component", "ui"])
+    @patch(
+        "sys.argv", ["principles_cli.py", "generate", "--platform", "android", "--component", "ui"]
+    )
     @patch("principles_cli.PrinciplesCLI.generate_code_prompt")
     def test_main_generate_command(self, mock_generate_code: Any) -> None:
         """Test main function with generate command."""
         mock_generate_code.return_value = "Generated code prompt"
 
         from principles_cli import main
+
         main()
 
         mock_generate_code.assert_called_once_with("android", "ui")
 
-    @patch("sys.argv", ["principles_cli.py", "architecture", "--platform", "ios", "--layer", "data"])
+    @patch(
+        "sys.argv", ["principles_cli.py", "architecture", "--platform", "ios", "--layer", "data"]
+    )
     @patch("principles_cli.PrinciplesCLI.generate_architecture_prompt")
     def test_main_architecture_command(self, mock_generate_arch: Any) -> None:
         """Test main function with architecture command."""
         mock_generate_arch.return_value = "Generated architecture prompt"
 
         from principles_cli import main
+
         main()
 
         mock_generate_arch.assert_called_once_with("ios", "data")
 
-    @patch("sys.argv", ["principles_cli.py", "dependency", "--platform", "web", "react", "lodash"])
+    @patch(
+        "sys.argv", ["principles_cli.py", "dependencies", "--platform", "web", "react", "lodash"]
+    )
     @patch("principles_cli.PrinciplesCLI.generate_dependency_prompt")
     def test_main_dependency_command(self, mock_generate_dep: Any) -> None:
         """Test main function with dependency command."""
         mock_generate_dep.return_value = "Generated dependency prompt"
 
         from principles_cli import main
+
         main()
 
         mock_generate_dep.assert_called_once_with("web", ["react", "lodash"])
@@ -617,7 +626,10 @@ class TestMainFunction:
         # argparse will exit with code 2 for invalid arguments
         assert exc_info.value.code == 2
 
-    @patch("sys.argv", ["principles_cli.py", "review", "--platform", "invalid-platform", "--focus", "security"])
+    @patch(
+        "sys.argv",
+        ["principles_cli.py", "review", "--platform", "invalid-platform", "--focus", "security"],
+    )
     def test_main_invalid_platform(self) -> None:
         """Test main function with invalid platform."""
         from principles_cli import main

@@ -28,6 +28,34 @@ class PrinciplesCLI:
             print(f"Error parsing YAML: {e}")
             sys.exit(1)
 
+    def load_principles(self) -> dict[str, Any]:
+        """Load principles.yaml"""
+        data = self.load_yaml(self.core_path / "principles.yaml")
+        principles = data.get("principles", data)
+        return principles if isinstance(principles, dict) else {}
+
+    def load_platforms(self) -> dict[str, Any]:
+        """Load platforms.yaml"""
+        data = self.load_yaml(self.core_path / "platforms.yaml")
+        platforms = data.get("platforms", data)
+        return platforms if isinstance(platforms, dict) else {}
+
+    def load_philosophy(self) -> dict[str, Any]:
+        """Load philosophy.yaml"""
+        return self.load_yaml(self.core_path / "philosophy.yaml")
+
+    def load_enforcement(self) -> dict[str, Any]:
+        """Load enforcement.yaml"""
+        return self.load_yaml(self.core_path / "enforcement.yaml")
+
+    def get_common_prompt_data(self, platform: str) -> tuple[dict[str, Any], str, dict[str, Any]]:
+        """Get common data needed by most prompt generation methods"""
+        principles = self.load_principles()
+        platform_title = self.get_platform_title(platform)
+        platforms = self.load_platforms()
+        platform_config = platforms.get(platform, {})
+        return principles, platform_title, platform_config
+
     def format_principles(
         self, principles: dict[str, Any], focus_areas: list[str] | None = None
     ) -> str:
@@ -198,10 +226,14 @@ class PrinciplesCLI:
                 if isinstance(level_data, dict):
                     description = level_data.get("description", f"{level.title()} violations")
                     action = level_data.get("action", "See documentation")
+                    llm_instructions = level_data.get("llm_instructions", "")
                     examples = level_data.get("examples", [])
 
                     output.append(f"- **{level.title()}**: {description}")
                     output.append(f"  - Action: {action}")
+
+                    if llm_instructions:
+                        output.append(f"  - AI Guidance: {llm_instructions}")
 
                     if examples:
                         output.append("  - Examples:")
@@ -215,30 +247,24 @@ class PrinciplesCLI:
     def generate_review_prompt(self, platform: str, focus_areas: list[str]) -> str:
         """Generate code review prompt"""
 
-        platform_title = {"ios": "iOS", "android": "Android", "web": "Web"}.get(
-            platform.lower(), platform.title()
-        )
+        platform_title = self.get_platform_title(platform)
 
-        # Load detection rules
-        rules = {}
-        for area in focus_areas:
-            detection_file = self.modules_path / "detection" / "rules" / f"{area}.yaml"
-            if detection_file.exists():
-                detection_data = self.load_yaml(detection_file)
-                rules[area] = detection_data.get("rules", {})
+        # Load severity data
+        severity_data = self.load_yaml(self.modules_path / "detection" / "severity.yaml")
+        severity_levels = severity_data.get("severity_levels", severity_data)
 
-        # Build detection sections
+        # Load detection rules using existing method
         detection_sections = []
         for area in focus_areas:
-            if area in rules:
-                output = [f"## {area.title()} Detection"]
-                for rule_name, rule_data in rules[area].items():
-                    if isinstance(rule_data, dict):
-                        severity = rule_data.get("severity", "unknown")
-                        description = rule_data.get("description", "")
-                        rule_title = rule_name.replace("_", " ").title()
-                        output.append(f"- **{rule_title}** ({severity}): {description}")
-                detection_sections.append("\n".join(output))
+            rules = self._load_detection_rules(area, platform)
+            if rules:
+                detection_sections.append(self._format_focused_detection(area, rules))
+
+        # Format enforcement context
+        enforcement_section = self._format_enforcement_context(focus_areas)
+
+        # Format severity levels
+        severity_section = self.format_severity_levels(severity_levels)
 
         prompt = f"""<!-- PROMPT_METADATA
 platform: {platform}
@@ -252,26 +278,165 @@ Review code against standards. **Priority**: Security > Accessibility > Testing.
 
 {chr(10).join(detection_sections)}
 
+## Severity Levels
+
+{severity_section}
+
+## What Happens Next: Automated CI Checks
+
+After your review, the following automated checks will run:
+
+{enforcement_section}
+
 ## Instructions
 
-1. Identify violations using patterns above
-2. Classify severity: Critical → Blocking → Required → Recommended
-3. Provide specific fixes with examples
-4. Focus on: {", ".join(focus_areas)}
+1. **Start by identifying violations** using the patterns above, then find others
+2. **Classify severity**: Critical → Blocking → Required → Recommended
+3. **Provide specific fixes** with before/after examples
+4. **Focus on**: {", ".join(focus_areas)}
 """
         return prompt
 
-    def generate_code_prompt(self, platform: str, component_type: str) -> str:
-        """Generate code writing prompt"""
-        platform_title = {"ios": "iOS", "android": "Android", "web": "Web"}.get(
-            platform.lower(), platform.title()
-        )
+    def _format_philosophy(self, philosophy: dict[str, Any]) -> str:
+        """Format philosophy for prompt inclusion"""
+        output = []
 
-        component_requirements = {
-            "ui": "Responsive design, semantic HTML, keyboard accessible",
-            "business-logic": "Pure functions, error handling, validation",
-            "data-layer": "API integration, caching, security",
+        # Mantras
+        if "mantras" in philosophy:
+            output.append("**Mantras**:")
+            for mantra in philosophy["mantras"]:
+                principle = mantra.get("principle", "")
+                explanation = mantra.get("explanation", "")
+                if principle:
+                    output.append(f"- *{principle}* - {explanation}")
+            output.append("")
+
+        # Core values (condensed)
+        if "core_values" in philosophy:
+            values_list = []
+            for category, values in philosophy["core_values"].items():
+                if isinstance(values, list) and values:
+                    values_list.append(f"{category.title()}: {values[0]}")
+            if values_list:
+                output.append(f"**Values**: {', '.join(values_list)}")
+                output.append("")
+
+        return "\n".join(output)
+
+    def _format_enforcement_context(self, focus_areas: list[str]) -> str:
+        """Format enforcement context showing what CI will check"""
+        output = []
+
+        enforcement = self.load_enforcement()
+        ci_pipeline = enforcement.get("enforcement_tools", {}).get("ci_pipeline", {})
+        stages = ci_pipeline.get("stages", [])
+
+        # Map focus areas to relevant CI stages
+        focus_to_stages = {
+            "security": ["security"],
+            "testing": ["test"],
+            "code_quality": ["lint"],
+            "accessibility": ["lint"],
+            "architecture": ["build", "lint"],
         }
+
+        relevant_stages = set()
+        for area in focus_areas:
+            relevant_stages.update(focus_to_stages.get(area, []))
+
+        if not relevant_stages:
+            relevant_stages = {"lint", "test", "security"}  # Defaults
+
+        for stage in stages:
+            stage_name = stage.get("name", "")
+            if stage_name in relevant_stages:
+                checks = stage.get("checks", [])
+                if checks:
+                    output.append(f"**{stage_name.title()} Stage**:")
+                    for check in checks[:3]:  # Top 3 checks
+                        output.append(f"- {check}")
+                    output.append("")
+
+        return "\n".join(output)
+
+    def _format_generation_guidance(
+        self, guidance: dict[str, Any], component_type: str, platform: str
+    ) -> str:
+        """Format generation guidance from YAML"""
+        output = []
+
+        # Component-type specific guidance
+        component_map = {
+            "ui": ["accessibility", "architecture"],
+            "business-logic": ["testing", "architecture"],
+            "data-layer": ["security", "architecture"],
+        }
+
+        focus_areas = component_map.get(component_type, ["architecture"])
+
+        principle_guidance = guidance.get("principle_guidance", {})
+        for area in focus_areas:
+            if area in principle_guidance:
+                area_data = principle_guidance[area]
+                output.append(f"### {area.title()}")
+
+                if "approach" in area_data:
+                    output.append(f"**Approach**: {area_data['approach']}")
+                    output.append("")
+
+                # Platform-specific guidance
+                if platform in area_data:
+                    platform_data = area_data[platform]
+                    if "always" in platform_data:
+                        output.append("**Always**:")
+                        for item in platform_data["always"]:
+                            output.append(f"- {item}")
+                        output.append("")
+
+                    if "never" in platform_data:
+                        output.append("**Never**:")
+                        for item in platform_data["never"]:
+                            output.append(f"- {item}")
+                        output.append("")
+
+        # Common mistakes
+        common_mistakes = guidance.get("common_mistakes", {})
+        if focus_areas and common_mistakes:
+            output.append("### Common Mistakes to Avoid")
+            for area in focus_areas:
+                if area in common_mistakes:
+                    for mistake in common_mistakes[area][:3]:  # Top 3
+                        output.append(f"- {mistake}")
+            output.append("")
+
+        return "\n".join(output)
+
+    def generate_code_prompt(self, platform: str, component_type: str) -> str:
+        """Generate code writing prompt with comprehensive guidance"""
+        # Load common data
+        principles, platform_title, platform_config = self.get_common_prompt_data(platform)
+        philosophy_data = self.load_philosophy()
+
+        # Load generation guidance
+        guidance_file = self.modules_path / "generation" / "guidance.yaml"
+        guidance = {}
+        if guidance_file.exists():
+            guidance = self.load_yaml(guidance_file)
+
+        # Map component types to relevant principles
+        component_to_principles = {
+            "ui": ["accessibility", "code_consistency"],
+            "business-logic": ["testing", "unidirectional_data_flow"],
+            "data-layer": ["security", "minimal_dependencies"],
+        }
+
+        focus_principles = component_to_principles.get(component_type, ["code_consistency"])
+
+        # Format sections
+        philosophy_section = self._format_philosophy(philosophy_data)
+        principles_section = self.format_principles(principles, focus_principles)
+        platform_section = self.format_platform_requirements(platform_config)
+        guidance_section = self._format_generation_guidance(guidance, component_type, platform)
 
         prompt = f"""<!-- PROMPT_METADATA
 platform: {platform}
@@ -281,22 +446,31 @@ mode: generate
 
 # Code Generation for {platform_title} {component_type.title()}
 
-Generate production-ready code following standards.
+Generate production-ready code following Livefront engineering standards.
 
-## Core Requirements
-- **Security**: HTTPS, encrypted data, no secrets
-- **Accessibility**: ARIA labels, WCAG 2.1 AA, keyboard nav
-- **Testing**: 80% coverage, testable architecture
-- **{component_type.title()}**: {
-            component_requirements.get(component_type, "Standard requirements")
-        }
+## Livefront Engineering Culture
+
+{philosophy_section}
+
+## Engineering Principles
+
+{principles_section}
+
+## Platform Requirements ({platform_title})
+
+{platform_section}
+
+## {component_type.title()} Guidance
+
+{guidance_section}
 
 ## Instructions
-1. Follow platform conventions
-2. Include TypeScript/type annotations
-3. Add error handling and loading states
-4. Make fully accessible
-5. Include relevant tests
+
+1. Follow platform conventions and patterns shown above
+2. Apply security, accessibility, and testing standards from principles
+3. Include error handling, loading states, and edge cases
+4. Write testable, maintainable code with clear separation of concerns
+5. Match existing code style and architecture patterns
 """
         return prompt
 
@@ -308,12 +482,8 @@ Generate production-ready code following standards.
 
     def generate_dependency_prompt(self, platform: str, dependencies: list[str]) -> str:
         """Generate dependency evaluation prompt"""
-        principles_data = self.load_yaml(self.core_path / "principles.yaml")
-        principles = principles_data.get("principles", principles_data)
-        platforms_data = self.load_yaml(self.core_path / "platforms.yaml")
-        platforms = platforms_data.get("platforms", platforms_data)
-
-        platform_config = platforms.get(platform, {})
+        # Load common data
+        principles, platform_title, platform_config = self.get_common_prompt_data(platform)
         approved_deps_config = platform_config.get("approved_dependencies", {})
 
         # Extract actual dependency names from nested structure
@@ -346,8 +516,6 @@ Generate production-ready code following standards.
                             f"  - Version: {details.get('version', 'Not specified')}"
                         )
                         break
-
-        platform_title = self.get_platform_title(platform)
 
         # Get minimal dependencies principle concisely
         minimal_deps_principle = principles.get("minimal_dependencies", {})
@@ -388,13 +556,8 @@ For each dependency, provide:
 
     def generate_architecture_prompt(self, platform: str, layer: str) -> str:
         """Generate architecture guidance prompt"""
-        principles_data = self.load_yaml(self.core_path / "principles.yaml")
-        principles = principles_data.get("principles", principles_data)
-        platforms_data = self.load_yaml(self.core_path / "platforms.yaml")
-        platforms = platforms_data.get("platforms", platforms_data)
-
-        platform_title = self.get_platform_title(platform)
-        platform_config = platforms.get(platform, {})
+        # Load common data
+        principles, platform_title, platform_config = self.get_common_prompt_data(platform)
 
         # Streamlined architecture principles
         arch_principles = self._format_focused_architecture(
@@ -683,7 +846,7 @@ def main() -> None:
         "--layer", choices=["data", "ui", "business-logic"], default="data"
     )
 
-    dependency_parser = subparsers.add_parser("dependency", help="Evaluate dependencies")
+    dependency_parser = subparsers.add_parser("dependencies", help="Evaluate dependencies")
     dependency_parser.add_argument("--platform", choices=["android", "ios", "web"], required=True)
     dependency_parser.add_argument("dependencies", nargs="+", help="Dependencies to evaluate")
 
@@ -701,7 +864,7 @@ def main() -> None:
             prompt = cli.generate_code_prompt(args.platform, args.component)
         elif args.command == "architecture":
             prompt = cli.generate_architecture_prompt(args.platform, args.layer)
-        elif args.command == "dependency":
+        elif args.command == "dependencies":
             prompt = cli.generate_dependency_prompt(args.platform, args.dependencies)
         else:
             parser.print_help()
