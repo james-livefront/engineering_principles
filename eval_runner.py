@@ -261,6 +261,7 @@ class PromptEvaluator:
         ai_evaluator: AIEvaluator,
         principles: list[str] | None = None,
         parallel: bool = True,
+        enhanced: bool = False,
     ) -> MultiConfigReport:
         """
         Evaluate multiple configurations and compare their performance.
@@ -287,7 +288,7 @@ class PromptEvaluator:
                 # Submit all evaluation tasks
                 future_to_config = {
                     executor.submit(
-                        self._evaluate_single_config, config, ai_evaluator, principles
+                        self._evaluate_single_config, config, ai_evaluator, principles, enhanced
                     ): config
                     for config in configs
                 }
@@ -304,7 +305,9 @@ class PromptEvaluator:
             # Sequential evaluation
             for config in configs:
                 try:
-                    result = self._evaluate_single_config(config, ai_evaluator, principles)
+                    result = self._evaluate_single_config(
+                        config, ai_evaluator, principles, enhanced
+                    )
                     config_results.append(result)
                 except Exception as e:
                     print(f"❌ Error evaluating {config.get('name', 'unknown')}: {e}")
@@ -333,6 +336,7 @@ class PromptEvaluator:
         config: dict[str, Any],
         ai_evaluator: AIEvaluator,
         principles: list[str] | None = None,
+        enhanced: bool = False,
     ) -> ConfigResult:
         """Evaluate a single configuration"""
         config_name = config.get("name", "unnamed")
@@ -351,6 +355,13 @@ class PromptEvaluator:
             raise ValueError(f"No prompt content for config '{config_name}'")
 
         print(f"  📊 Evaluating '{config_name}'...")
+
+        # Apply enhancement if requested
+        if enhanced:
+            if isinstance(ai_evaluator, APIEvaluator):
+                prompt_content = enhance_prompt_with_llm(prompt_content, ai_evaluator)
+            else:
+                print("  ⚠️ Enhancement skipped: evaluator type not supported")
 
         # Run the standard evaluation
         report = self.evaluate_detection_prompt(prompt_content, ai_evaluator, principles)
@@ -884,7 +895,7 @@ def main() -> None:
 
             # Run multi-prompt evaluation
             multi_report = evaluator.evaluate_multiple_configs(
-                configs, api_evaluator, effective_principles, args.parallel
+                configs, api_evaluator, effective_principles, args.parallel, args.enhanced
             )
 
             # Print clean comparison results
@@ -928,9 +939,15 @@ def main() -> None:
         print(f"Platform: {args.platform}")
     if effective_principles:
         print(f"Focus: {', '.join(effective_principles)}")
+    if args.enhanced:
+        print("Enhanced: Yes (using LLM to improve detection patterns)")
 
     if args.mode in ["detection", "both"]:
         api_evaluator = APIEvaluator("openai", "gpt-4o", "https://api.openai.com/v1")
+
+        # Apply enhancement if requested
+        if args.enhanced:
+            test_prompt = enhance_prompt_with_llm(test_prompt, api_evaluator)
 
         report = evaluator.evaluate_detection_prompt(
             test_prompt, api_evaluator, effective_principles
