@@ -1,6 +1,8 @@
 # Python
 __pycache__/
+**/__pycache__/
 *.py[cod]
+*.pyc
 *$py.class
 *.so
 .Python
@@ -35,9 +37,13 @@ output/
 temp/
 notes/
 .claude/
+.serena/
 
 # Development cruft
 *_prompt.txt
+*_prompt.md
+prompt.txt
+prompt.md
 *_test.txt
 debug_*.txt
 analysis_*.txt
@@ -52,6 +58,10 @@ default_enhanced.md
 enhanced_results.md
 baseline_*.md
 llm_enhanced_*.md
+*_results.md
+*_results.json
+results.md
+results.json
 
 # Config files (keep only the main ones)
 sample_config.yaml
