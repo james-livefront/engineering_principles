@@ -8,9 +8,21 @@ This project is an **ongoing experiment** in human-AI collaboration for code qua
 
 - **Codification**: How do we translate human principles and philosophies into patterns that LLMs can reliably apply?
 - **Evaluation**: What makes a good eval for engineering principles prompts? How do we measure success?
-- **Balance**: Where's the line between hard-coded rules (YAML patterns) vs letting LLMs research and decide?
+- **Balance**: Where's the line between hard-coded rules (YAML patterns) vs letting LLMs research and decide? What are the best ways to give information to AI assistants?
 
-The answers aren't clear yet - LEAP represents an inital attempt at finding the right balance.
+The answers aren't clear yet - LEAP represents an initial attempt at finding the right balance.
+
+## Recent Enhancements
+
+### Latest Optimizations
+
+LEAP now includes significant improvements for production readiness:
+
+1. **Philosophy Integration**: Code generation prompts now include Livefront's core mantras and values for cultural context
+2. **Simplified Architecture**: Streamlined prompt generation with consolidated data loading
+3. **Enforcement Context**: Review prompts now show "What Happens Next" - the CI checks that should be implemented according to engineering standards
+4. **Focus Area Filtering**: Target specific principles (security, accessibility, testing) based on your review needs
+5. **Full YAML Utilization**: All 542 lines of guidance data (philosophy, enforcement, context rules) now integrated
 
 ## Philosophy
 
@@ -46,7 +58,10 @@ uv run python principles_cli.py generate --platform android --component business
 uv run python principles_cli.py architecture --platform web
 
 # » Evaluate dependency approval
-uv run python principles_cli.py dependency --platform web react typescript
+uv run python principles_cli.py dependencies --platform web react typescript
+
+# » Use focus areas to target specific principles
+uv run python principles_cli.py review --platform android --focus accessibility,testing
 
 # » Test prompt effectiveness (requires API keys in .env)
 cp .env.example .env  # Edit with your API keys
@@ -91,9 +106,12 @@ engineering_principles/
 
 - **Modular Design**: Core philosophy separate from implementation
 - **Platform-Aware**: Android, iOS, and Web-specific guidance
-- **Context-Sensitive**: Different rules for UI vs business logic vs data layer
+- **Focus-Driven**: Target specific principles (security, accessibility, testing) for efficient reviews
 - **Severity-Based**: Critical, Blocking, Required, Recommended, Informational
 - **Pattern-Based Detection**: 70%+ coverage with YAML-based regex patterns
+- **Cultural Context**: Integrates Livefront mantras and values into prompts
+- **Enforcement Awareness**: Shows what CI checks should be implemented according to standards
+- **Streamlined Architecture**: Simplified data loading and consolidated prompt generation
 - **LLM Layer**: Rules + AI analysis targeting 100% coverage (experimental; may introduce false positives)
 - **Multi-Layered Architecture**: Base patterns + AI analysis + real-time updates
 
@@ -119,13 +137,44 @@ engineering_principles/
 14. **Compatibility** - Document and support required versions
 15. **Documentation** - README with setup, build, test, and release info
 
-### Enforcement Levels
+### Severity System
 
-- **Critical**: Security and accessibility violations - *Blocks merge immediately*
-- **Blocking**: Test coverage, build warnings, TODOs - *Must fix before merge*
-- **Required**: Design integrity, documentation - *Should fix before merge*
-- **Recommended**: Code style, best practices - *Improve when possible*
+LEAP includes a comprehensive severity classification system that provides structured guidance to AI assistants for consistent code review feedback:
+
+#### Severity Levels
+
+- **Critical**: Security vulnerabilities, accessibility barriers - *Blocks merge immediately*
+- **Blocking**: Test coverage gaps, build warnings, TODO comments - *Must fix before merge*
+- **Required**: Design deviations, missing documentation - *Should fix before merge*
+- **Recommended**: Code style issues, best practices - *Improve when possible*
 - **Informational**: Suggestions and tips - *Consider for future improvements*
+
+#### AI Guidance Integration
+
+Each severity level includes specific instructions for AI assistants:
+
+**Critical Level Guidance:**
+
+- Flag immediately with security/accessibility impact explanation
+- Provide before/after examples when possible
+- Reference relevant compliance standards (OWASP, WCAG)
+
+**Blocking Level Guidance:**
+
+- Require immediate resolution or detailed justification
+- Show impact on CI/CD pipeline and merge blocking
+
+**Required Level Guidance:**
+
+- Request fix or explanation of trade-offs
+- Allow documented exceptions with rationale
+
+**Recommended Level Guidance:**
+
+- Suggest improvements without blocking
+- Focus on maintainability and code quality
+
+This structured approach ensures consistent, professional code review feedback that aligns with Livefront's engineering standards and severity escalation processes.
 
 ## Detection Architecture
 
@@ -216,8 +265,11 @@ python principles_cli.py review --platform <platform> --focus <areas>
 # Focus on security and accessibility for web
 uv run python principles_cli.py review --platform web --focus security,accessibility
 
-# All principles for Android
-uv run python principles_cli.py review --platform android --focus security,accessibility,testing,design,documentation
+# Review Android code with focus on UI concerns
+uv run python principles_cli.py review --platform android --focus accessibility,testing
+
+# Review backend service with focus on security and architecture
+uv run python principles_cli.py review --platform web --focus security,architecture
 
 # Just security for iOS
 uv run python principles_cli.py review --platform ios --focus security
@@ -225,7 +277,7 @@ uv run python principles_cli.py review --platform ios --focus security
 
 #### `generate` - Code Writing Prompts
 
-Generate prompts for writing new code that follows principles.
+Generate prompts for writing new code that follows principles. Now includes Livefront engineering culture and philosophy!
 
 ```bash
 uv run python principles_cli.py generate --platform <platform> --component <type>
@@ -236,14 +288,25 @@ uv run python principles_cli.py generate --platform <platform> --component <type
 - `--platform`: `android`, `ios`, or `web`
 - `--component`: `ui`, `business-logic`, or `data-layer` (default: `ui`)
 
+**What's Included:**
+
+- **Engineering Culture**: Livefront mantras ("Don't defer work", "Design is the spec") and core values
+- **Focused Principles**: Only relevant principles for the component type
+- **Platform Requirements**: Approved dependencies, tools, and version requirements
+- **Component Guidance**: Platform-specific "always" and "never" rules
+- **Common Mistakes**: Top pitfalls to avoid
+
 **Examples:**
 
 ```bash
-# Generate UI component prompt for web
+# Generate UI component prompt for web (includes accessibility guidance)
 uv run python principles_cli.py generate --platform web --component ui
 
-# Generate business logic prompt for Android
+# Generate business logic prompt for Android (includes testing guidance)
 uv run python principles_cli.py generate --platform android --component business-logic
+
+# Generate data layer prompt (includes security guidance)
+uv run python principles_cli.py generate --platform ios --component data-layer
 ```
 
 #### `architecture` - Architecture Guidance
@@ -254,12 +317,22 @@ Generate architectural guidance for specific layers.
 uv run python principles_cli.py architecture --platform <platform> --layer <layer>
 ```
 
-#### `dependency` - Dependency Evaluation
+#### `dependencies` - Dependency Evaluation
 
 Generate prompts for evaluating third-party dependencies.
 
 ```bash
-uv run python principles_cli.py dependency --platform <platform> <dependency1> <dependency2> ...
+uv run python principles_cli.py dependencies --platform <platform> <dependency1> <dependency2> ...
+```
+
+**Examples:**
+
+```bash
+# Evaluate web dependencies
+uv run python principles_cli.py dependencies --platform web lodash axios
+
+# Evaluate Android dependencies
+uv run python principles_cli.py dependencies --platform android rxjava3 retrofit
 ```
 
 ### Platform-Specific Considerations
@@ -306,9 +379,30 @@ Available focus areas for the `--focus` parameter:
 
 Test the effectiveness of generated prompts using test cases with real AI models.
 
-### Smart Context Detection
+### Focus Area Targeting
 
-Generated prompts now include metadata headers that automatically configure evaluations:
+**Efficient Principle Selection**
+
+LEAP allows you to target specific engineering principles based on your review needs:
+
+```bash
+# Focus on UI concerns for frontend code
+$ python principles_cli.py review --platform web --focus accessibility,design_integrity
+
+# Focus on backend concerns for services
+$ python principles_cli.py review --platform android --focus security,testing,architecture
+
+# Focus on specific principle for targeted review
+$ python principles_cli.py review --platform ios --focus security
+```
+
+**Common Focus Combinations:**
+
+- **UI Code**: `accessibility,design_integrity,code_quality` → User-facing components
+- **Business Logic**: `testing,architecture,minimal_dependencies` → Core application logic
+- **Data Layer**: `security,testing,unidirectional_data_flow` → APIs and data handling
+
+Generated prompts also include metadata headers that automatically configure evaluations:
 
 ```yaml
 <!-- PROMPT_METADATA
@@ -428,16 +522,16 @@ Settings are applied in this order (highest to lowest):
 ```bash
 # Auto-detect platform and focus from prompt metadata
 uv run python principles_cli.py review --platform web --focus security > prompt.txt
-uv run python eval_runner.py --mode detection --prompt-file prompt.txt
+uv run python eval_runner.py --prompt-file prompt.txt  # Note: --mode detection is the default
 
 # Or manually specify platform and focus (overrides metadata)
-uv run python eval_runner.py --mode detection --prompt-file prompt.txt --platform android --focus testing
+uv run python eval_runner.py --prompt-file prompt.txt --platform android --focus testing
 
 # Test with LLM enhancement for better accuracy
-uv run python eval_runner.py --mode detection --prompt-file prompt.txt --enhanced
+uv run python eval_runner.py --prompt-file prompt.txt --enhanced
 
-# Show enhancement diff
-uv run python eval_runner.py --mode detection --prompt-file prompt.txt --enhanced --show-diff
+# Explicitly specify generation mode (detection is default)
+uv run python eval_runner.py --mode generation --categories ui_component
 ```
 
 **Specific Principles:**
@@ -485,6 +579,15 @@ uv run python eval_runner.py --mode generation --categories ui_component
 # Test both detection and generation
 uv run python eval_runner.py --mode both --output full_report.md
 ```
+
+### Evaluation Runner Defaults
+
+The `eval_runner.py` script uses these defaults:
+
+- **Mode**: `detection` (default) - Use `--mode generation` or `--mode both` to change
+- **Parallel Execution**: Enabled by default - Use `--no-parallel` to disable
+- **Provider**: Attempts to auto-detect from available API keys
+- **Model**: Uses provider's recommended model unless specified
 
 ### Available Test Cases
 
@@ -682,9 +785,10 @@ uv run python eval_runner.py --mode generation --categories ui_component --outpu
 
 ```bash
 # Check if a new dependency aligns with principles
-uv run python principles_cli.py dependency --platform web some-new-library
+uv run python principles_cli.py dependencies --platform web some-new-library
 
 # Output includes:
+# - Approval status (✅ APPROVED or ❌ NOT APPROVED)
 # - Build vs buy analysis
 # - Security considerations
 # - Maintenance burden assessment
@@ -867,8 +971,8 @@ uv run python principles_cli.py review --platform android --focus architecture,t
 # Enhanced security review with latest OWASP patterns
 uv run python eval_runner.py --mode detection --platform web --focus security --enhanced
 
-# Show what enhancement adds to base prompt
-uv run python eval_runner.py --platform web --focus accessibility --enhanced --show-diff
+# Test enhanced accessibility prompt
+uv run python eval_runner.py --platform web --focus accessibility --enhanced
 
 # Test comprehensive coverage across all areas
 uv run python eval_runner.py --mode detection --enhanced --platform web
