@@ -13,6 +13,10 @@
 - [x] Multi-layered detection architecture (base + enhanced)
 - [x] Comprehensive documentation and examples
 - [x] Evaluation metrics documentation (accuracy, precision, recall, F1 score)
+- [x] **MCP Server Integration** - Real-time AI agent integration with Claude Desktop/Code
+- [x] **pipx Installation** - Global commands (leap-mcp-server, leap-review, leap-eval)
+- [x] **Comprehensive Testing** - 97% MCP server coverage (40/40 tests passing)
+- [x] **Beginner-Friendly Setup** - One-command installation via install.sh
 
 ## TODO
 
@@ -43,6 +47,14 @@
 
 ### Test Suite Enhancements
 
+#### MCP Server Testing (Completed)
+
+- [x] Comprehensive MCP server API tests (40 test cases)
+- [x] All 7 MCP tools tested (get_principles, get_detection_patterns, get_generation_guidance, get_platform_requirements, get_enforcement_specs, validate_dependency, get_severity_guidance)
+- [x] Routing and tool registration tests
+- [x] Mock-based testing for fast, reliable tests
+- [x] 97% coverage on leap_mcp_server.py
+
 #### Integration Testing
 
 - [ ] End-to-end prompt generation workflow tests
@@ -68,10 +80,12 @@
 
 ### Integration Opportunities
 
+- [x] **MCP Server for AI Assistants** - Claude Desktop & Claude Code integration
 - [ ] IDE assistants (VS Code extension)
 - [ ] CI bot integration (GitHub Actions, Jenkins)
 - [ ] Pre-commit hooks automation
 - [ ] Slack/Teams notifications for violations
+- [ ] Expand MCP support to other AI tools (Cursor, Windsurf, etc.)
 
 ### Community & Extensibility
 
