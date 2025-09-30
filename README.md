@@ -1,28 +1,22 @@
-# LEAP - Livefront Engineering Automated Principles 🐸
+# LEAP - Livefront Engineering Automated Principles
 
-A modular system for encoding and enforcing Livefront's engineering principles through AI-powered code detection and generation.
+Modular system for encoding and enforcing engineering principles through AI-assisted code detection and generation.
 
-## Experimental Nature
+## Status
 
-This project is an **ongoing experiment** in human-AI collaboration for code quality. Beyond the practical tool, it explores fundamental questions:
+Experimental. Open questions remain:
 
-- **Codification**: How do we translate human principles and philosophies into patterns that LLMs can reliably apply?
-- **Evaluation**: What makes a good eval for engineering principles prompts? How do we measure success?
-- **Balance**: Where's the line between hard-coded rules (YAML patterns) vs letting LLMs research and decide? What are the best ways to give information to AI assistants?
+- **Codification**: How to translate principles into patterns LLMs can reliably apply?
+- **Evaluation**: What constitutes a valid eval for engineering principles?
+- **Balance**: Hard-coded rules (YAML patterns) vs LLM analysis?
 
-The answers aren't clear yet - LEAP represents an initial attempt at finding the right balance.
+## Recent Changes
 
-## Recent Enhancements
-
-### Latest Optimizations
-
-LEAP now includes significant improvements for production readiness:
-
-1. **Philosophy Integration**: Code generation prompts now include Livefront's core mantras and values for cultural context
-2. **Simplified Architecture**: Streamlined prompt generation with consolidated data loading
-3. **Enforcement Context**: Review prompts now show "What Happens Next" - the CI checks that should be implemented according to engineering standards
-4. **Focus Area Filtering**: Target specific principles (security, accessibility, testing) based on your review needs
-5. **Full YAML Utilization**: All 542 lines of guidance data (philosophy, enforcement, context rules) now integrated
+- Philosophy integration: Livefront mantras/values in code generation prompts
+- Simplified architecture: Consolidated data loading, streamlined prompt generation
+- Enforcement context: Shows CI checks that should be implemented per standards
+- Focus area filtering: Target specific principles (security, accessibility, testing)
+- YAML utilization: 542 lines of guidance data integrated
 
 ## Philosophy
 
@@ -37,12 +31,28 @@ We give a damn about building software that is reliable, performant, maintainabl
 
 ## Quick Start
 
+### For End Users
+
+```bash
+git clone git@github.com:james-livefront/engineering_principles.git
+cd engineering_principles
+./install.sh
+```
+
+The script:
+- Checks Python version (3.11+ required)
+- Installs pipx if needed
+- Installs LEAP globally
+- Shows Claude Desktop config instructions
+
+### For Developers
+
 ```bash
 # Clone and navigate to the repository
-git clone <repo-url>
+git clone git@github.com:james-livefront/engineering_principles.git
 cd engineering_principles
 
-# Install dependencies
+# Install dependencies for local development
 uv sync
 
 # » Generate code review prompts
@@ -60,20 +70,25 @@ uv run python principles_cli.py architecture --platform web
 # » Evaluate dependency approval
 uv run python principles_cli.py dependencies --platform web react typescript
 
-# » Use focus areas to target specific principles
-uv run python principles_cli.py review --platform android --focus accessibility,testing
-
 # » Test prompt effectiveness (requires API keys in .env)
 cp .env.example .env  # Edit with your API keys
 uv run python eval_runner.py --mode detection --platform web --focus accessibility
 
 # » Improved mode attempts to increase detection with LLM analysis
 uv run python eval_runner.py --mode detection --platform web --focus security --enhanced
+
+# » Install MCP server globally for AI agent integration
+pipx install .
+
+# » Or start MCP server manually for testing
+make mcp-server
+# Or run directly:
+uv run python leap_mcp_server.py
 ```
 
 ## System Architecture
 
-LEAP uses a modular architecture that separates core knowledge from implementation details:
+Modular architecture separating core knowledge from implementation:
 
 ```text
 engineering_principles/
@@ -102,18 +117,16 @@ engineering_principles/
 └── eval_config.yaml        # Sample configuration file
 ```
 
-**Key Features:**
+**Features:**
 
-- **Modular Design**: Core philosophy separate from implementation
-- **Platform-Aware**: Android, iOS, and Web-specific guidance
-- **Focus-Driven**: Target specific principles (security, accessibility, testing) for efficient reviews
-- **Severity-Based**: Critical, Blocking, Required, Recommended, Informational
-- **Pattern-Based Detection**: 70%+ coverage with YAML-based regex patterns
-- **Cultural Context**: Integrates Livefront mantras and values into prompts
-- **Enforcement Awareness**: Shows what CI checks should be implemented according to standards
-- **Streamlined Architecture**: Simplified data loading and consolidated prompt generation
-- **LLM Layer**: Rules + AI analysis targeting 100% coverage (experimental; may introduce false positives)
-- **Multi-Layered Architecture**: Base patterns + AI analysis + real-time updates
+- Modular design: Core philosophy separate from implementation
+- Platform-aware: Android, iOS, Web-specific guidance
+- Focus-driven: Target specific principles for efficient reviews
+- Severity-based: Critical, Blocking, Required, Recommended, Informational
+- Pattern-based detection: 70%+ coverage with YAML regex patterns
+- Cultural context: Integrates Livefront mantras and values
+- Enforcement awareness: Shows CI checks per standards
+- LLM layer: Rules + AI analysis (experimental)
 
 ## Engineering Principles
 
@@ -139,110 +152,62 @@ engineering_principles/
 
 ### Severity System
 
-LEAP includes a comprehensive severity classification system that provides structured guidance to AI assistants for consistent code review feedback:
+- **Critical**: Security vulnerabilities, accessibility barriers → Blocks merge
+- **Blocking**: Test coverage gaps, build warnings, TODO comments → Must fix before merge
+- **Required**: Design deviations, missing documentation → Should fix before merge
+- **Recommended**: Code style issues, best practices → Improve when possible
+- **Informational**: Suggestions and tips → Consider for future
 
-#### Severity Levels
-
-- **Critical**: Security vulnerabilities, accessibility barriers - *Blocks merge immediately*
-- **Blocking**: Test coverage gaps, build warnings, TODO comments - *Must fix before merge*
-- **Required**: Design deviations, missing documentation - *Should fix before merge*
-- **Recommended**: Code style issues, best practices - *Improve when possible*
-- **Informational**: Suggestions and tips - *Consider for future improvements*
-
-#### AI Guidance Integration
-
-Each severity level includes specific instructions for AI assistants:
-
-**Critical Level Guidance:**
-
-- Flag immediately with security/accessibility impact explanation
-- Provide before/after examples when possible
-- Reference relevant compliance standards (OWASP, WCAG)
-
-**Blocking Level Guidance:**
-
-- Require immediate resolution or detailed justification
-- Show impact on CI/CD pipeline and merge blocking
-
-**Required Level Guidance:**
-
-- Request fix or explanation of trade-offs
-- Allow documented exceptions with rationale
-
-**Recommended Level Guidance:**
-
-- Suggest improvements without blocking
-- Focus on maintainability and code quality
-
-This structured approach ensures consistent, professional code review feedback that aligns with Livefront's engineering standards and severity escalation processes.
+AI assistants receive structured guidance per severity level for consistent code review feedback aligned with engineering standards.
 
 ## Detection Architecture
 
-The detection system uses multiple layers: objective pattern matching combined with optional AI analysis.
+Two-layer system: objective pattern matching + optional AI analysis.
 
-### **Base Detection Layer (70% Coverage)**
+### Base Detection (70% Coverage)
 
-**YAML-based regex patterns for objective violations:**
-
+YAML regex patterns:
 - Security: Hardcoded secrets, insecure URLs, weak crypto, storage issues
 - Accessibility: Missing alt text, ARIA labels, touch targets, semantic HTML
 - Testing: Missing tests, flaky patterns, coverage issues
 - Architecture: Data flow violations, tight coupling, error handling
 
-### **Enhanced Detection Layer (Experimental)**
+### Enhanced Detection (Experimental)
 
-**LLM-powered intelligence that attempts to improve detection:**
+LLM analysis attempts:
+- Latest standards: OWASP 2024, WCAG 2.2, framework-specific patterns
+- Sophisticated analysis: Cross-file dependencies, contextual severity
+- Advanced patterns: Multi-line detection, semantic code analysis
 
-- **Latest Standards**: OWASP 2024, WCAG 2.2, framework-specific patterns
-- **Sophisticated Analysis**: Cross-file dependencies, contextual severity
-- **Advanced Patterns**: Multi-line detection, semantic code analysis
-- **Real-Time Updates**: Current vulnerabilities, modern tooling, platform evolution
-- **Note**: Enhancement is experimental and may not always improve accuracy
-
-### **Architecture Benefits**
-
-- **Reliable Core**: YAML patterns ensure consistent detection
-- **Experimental Enhancement**: LLM attempts to add latest practices
-- **No Tight Coupling**: Base patterns stay stable, enhancements evolve
-- **Maximum Power**: Combines objective patterns with intelligent analysis
+Note: YAML patterns provide consistent detection. LLM enhancement experimental, may not improve accuracy.
 
 ## CLI Usage
 
-The `principles_cli.py` script generates two types of AI prompts with integrated YAML detection rules:
+Two prompt types with integrated YAML detection rules:
 
-### **Two-Prompt Pattern**
-
-1. **System Prompts** (`generate` command): Set up AI assistants with persistent role and constraints
-2. **User Prompts** (`review` command): Make specific requests within established context
-
-**Usage Pattern:**
+1. **System Prompts** (`generate`): Set up AI assistants with persistent role and constraints
+2. **User Prompts** (`review`): Make specific requests within established context
 
 ```bash
-# Step 1: Set up AI assistant with system prompt
+# Set up AI assistant with system prompt
 python principles_cli.py generate --platform web --component ui > system.txt
 
-# Step 2: Use for specific review tasks
+# Use for specific review tasks
 python principles_cli.py review --platform web --focus security > review.txt
 ```
 
-This separation attempts maximum flexibility - configure domain-specific AI assistants once, then use targeted review prompts for specific tasks.
+**Enhancement Layers:**
 
-### **Enhancement Layers**
+Base (always active):
+- Detection patterns from `modules/detection/rules/`
+- Platform-specific filtering
+- Severity-ordered rules
+- ~70% test case coverage
 
-**Base Layer** (Always Active):
-
-- Loads detection patterns from `modules/detection/rules/`
-- Platform-specific filtering (web patterns vs Android vs iOS)
-- Severity-ordered rules (Critical → Blocking → Required → Recommended)
-- ~70% test case coverage with objective pattern matching
-
-**AI Analysis Layer** (`--enhanced` flag):
-
-- LLM attempts to add to-the-moment detection capabilities
-- Latest OWASP, WCAG 2.2, framework-specific intelligence
-- Cross-file and contextual analysis techniques
-- Real-time updates for current vulnerabilities and best practices
-- **Note**: Experimental - targets higher coverage but may introduce false positives
+AI Analysis (`--enhanced`):
+- Latest OWASP, WCAG 2.2 intelligence
+- Cross-file and contextual analysis
+- Note: Experimental, may introduce false positives
 
 ### Basic Commands
 
@@ -277,24 +242,22 @@ uv run python principles_cli.py review --platform ios --focus security
 
 #### `generate` - Code Writing Prompts
 
-Generate prompts for writing new code that follows principles. Now includes Livefront engineering culture and philosophy!
+Generate prompts for writing new code that follows principles.
 
 ```bash
 uv run python principles_cli.py generate --platform <platform> --component <type>
 ```
 
 **Options:**
-
 - `--platform`: `android`, `ios`, or `web`
 - `--component`: `ui`, `business-logic`, or `data-layer` (default: `ui`)
 
-**What's Included:**
-
-- **Engineering Culture**: Livefront mantras ("Don't defer work", "Design is the spec") and core values
-- **Focused Principles**: Only relevant principles for the component type
-- **Platform Requirements**: Approved dependencies, tools, and version requirements
-- **Component Guidance**: Platform-specific "always" and "never" rules
-- **Common Mistakes**: Top pitfalls to avoid
+**Includes:**
+- Engineering culture: Livefront mantras and core values
+- Focused principles: Relevant for component type
+- Platform requirements: Approved dependencies, tools, version requirements
+- Component guidance: Platform-specific "always" and "never" rules
+- Common mistakes: Top pitfalls to avoid
 
 **Examples:**
 
@@ -375,15 +338,196 @@ Available focus areas for the `--focus` parameter:
 - `localization` - Internationalization support
 - `compatibility` - Version support, browser compatibility
 
+## MCP Server Integration
+
+MCP server provides real-time access to engineering principles, detection patterns, and enforcement specs for AI agents.
+
+
+### Installation
+
+```bash
+pip install pipx
+cd /path/to/engineering_principles
+pipx install .
+```
+
+Global commands:
+- `leap-mcp-server` - MCP server for AI agents
+- `leap-review` - Code review prompts
+- `leap-eval` - Evaluation tests
+
+For development: Use `uv run python principles_cli.py` for immediate code changes.
+
+### Starting the Server Manually
+
+```bash
+leap-mcp-server                  # pipx installation
+make mcp-server                  # local development
+uv run python leap_mcp_server.py # direct execution
+```
+
+Server runs on stdio for MCP-compatible AI agents.
+
+### Available Tools
+
+7 tools for AI agents:
+
+#### 1. `get_principles`
+Get engineering principles, optionally filtered by platform and focus areas.
+
+```python
+# Example call
+{
+  "platform": "web",
+  "focus_areas": ["security", "accessibility"]
+}
+```
+
+#### 2. `get_detection_patterns`
+Get regex patterns for detecting violations of engineering principles.
+
+```python
+# Example call
+{
+  "principle": "security",
+  "platform": "web"
+}
+```
+
+#### 3. `get_generation_guidance`
+Get guidance for writing new code following engineering principles.
+
+```python
+# Example call
+{
+  "platform": "android",
+  "component_type": "ui"
+}
+```
+
+#### 4. `get_platform_requirements`
+Get platform-specific requirements, tools, and constraints.
+
+```python
+# Example call
+{
+  "platform": "ios"
+}
+```
+
+#### 5. `get_enforcement_specs`
+Get CI implementation guidance showing what checks should be implemented.
+
+```python
+# Example call
+{
+  "focus_areas": ["security", "testing"]
+}
+```
+
+#### 6. `validate_dependency`
+Check if a dependency is approved for a specific platform.
+
+```python
+# Example call
+{
+  "package": "lodash",
+  "platform": "web"
+}
+```
+
+#### 7. `get_severity_guidance`
+Get guidance on how to classify violation severity levels.
+
+```python
+# Example call
+{}
+```
+
+### Adding to Claude Desktop
+
+After `pipx install .`, add to config:
+
+**Location:** `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
+
+```json
+{
+  "mcpServers": {
+    "leap": {
+      "command": "leap-mcp-server"
+    }
+  }
+}
+```
+
+**For development** (immediate code changes):
+
+```json
+{
+  "mcpServers": {
+    "leap": {
+      "command": "/absolute/path/to/engineering_principles/.venv/bin/python",
+      "args": [
+        "/absolute/path/to/engineering_principles/leap_mcp_server.py"
+      ],
+      "cwd": "/absolute/path/to/engineering_principles"
+    }
+  }
+}
+```
+
+Replace `/absolute/path/to/engineering_principles` with actual path. Run `uv sync` first.
+
+### Adding to Claude Code
+
+Import Claude Desktop config:
+
+**Location:** `~/.config/claude-code/mcp.json`
+
+```json
+{
+  "$import": "~/Library/Application Support/Claude/claude_desktop_config.json"
+}
+```
+
+Shares MCP servers between Claude Desktop and Claude Code. Updates to Desktop config reflected in Code.
+
+Alternative: Configure Claude Code separately using same format as Desktop.
+
+### Usage in AI Agents
+
+Agents automatically access LEAP data:
+- Code review task → calls `get_detection_patterns`
+- New code generation → calls `get_generation_guidance`
+- Dependency evaluation → calls `validate_dependency`
+
+Manual queries:
+```
+"What are the security principles for web?"
+→ calls get_principles with platform=web, focus_areas=["security"]
+
+"Is react-query approved for web?"
+→ calls validate_dependency with package=react-query, platform=web
+
+"What CI checks for accessibility?"
+→ calls get_enforcement_specs with focus_areas=["accessibility"]
+```
+
+Benefits:
+- Real-time access: No copy/paste, agents query directly
+- Context-aware: Platform-specific, focused guidance
+- Always current: YAML changes immediately available
+- Structured data: Not just text prompts
+- Dependency validation: Instant approval checks
+- Enforcement specs: CI check guidance
+
 ## Evaluation Framework
 
-Test the effectiveness of generated prompts using test cases with real AI models.
+Test prompt effectiveness using test cases with AI models.
 
 ### Focus Area Targeting
 
-**Efficient Principle Selection**
-
-LEAP allows you to target specific engineering principles based on your review needs:
+Target specific principles based on review needs:
 
 ```bash
 # Focus on UI concerns for frontend code
@@ -396,13 +540,12 @@ $ python principles_cli.py review --platform android --focus security,testing,ar
 $ python principles_cli.py review --platform ios --focus security
 ```
 
-**Common Focus Combinations:**
+Common combinations:
+- UI Code: `accessibility,design_integrity,code_quality`
+- Business Logic: `testing,architecture,minimal_dependencies`
+- Data Layer: `security,testing,unidirectional_data_flow`
 
-- **UI Code**: `accessibility,design_integrity,code_quality` → User-facing components
-- **Business Logic**: `testing,architecture,minimal_dependencies` → Core application logic
-- **Data Layer**: `security,testing,unidirectional_data_flow` → APIs and data handling
-
-Generated prompts also include metadata headers that automatically configure evaluations:
+Generated prompts include metadata headers for automatic eval configuration:
 
 ```yaml
 <!-- PROMPT_METADATA
@@ -412,44 +555,37 @@ mode: review
 -->
 ```
 
-The evaluation framework automatically:
+Evaluation framework:
+- Detects platform and focus from metadata
+- Filters test cases to match context
+- Fair evaluation (web prompts tested against web violations only)
 
-- Detects the platform and focus areas from prompt metadata
-- Filters test cases to match the prompt's context
-- Provides fair evaluations (web prompts tested only against web violations)
+### Performance Metrics
 
-### **Performance Metrics**
-
-The evaluation framework shows improvements with rule-based prompt generation:
+Rule-based prompt generation results:
 
 | Mode | Accuracy | Precision | Recall | F1 Score |
 |------|----------|-----------|--------|----------|
-| **Basic Principles** | 60% | 75% | 75% | 75% |
-| **Rule-Based (Default)** | 85% | 84% | 100% | 91% |
-| **LLM Enhanced** | 80% | 88% | 88% | 88% |
+| Basic Principles | 60% | 75% | 75% | 75% |
+| Rule-Based (Default) | 85% | 84% | 100% | 91% |
+| LLM Enhanced | 80% | 88% | 88% | 88% |
 
-**Key Improvements:**
-
-- +25% accuracy with rule-based approach (now default)
-- 100% recall - catches all actual violations
-- 91% F1 score - balanced precision and recall
-- Category specific: 80% security detection, 90% accessibility detection
+Key improvements:
+- +25% accuracy with rule-based (default)
+- 100% recall: catches all violations
+- 91% F1 score: balanced precision/recall
+- Category specific: 80% security, 90% accessibility
 
 ### Setup & Configuration
 
 #### 1. Install Dependencies
 
-This project uses `uv` for modern Python dependency management and virtual environments.
+Uses `uv` for dependency management:
 
 ```bash
-# Install uv if you haven't already
 pip install uv
-
-# Install all dependencies (production + development)
-uv sync
-
-# Or install only production dependencies
-uv install
+uv sync      # production + development
+uv install   # production only
 ```
 
 #### 2. Set Up API Keys
@@ -470,50 +606,20 @@ export ANTHROPIC_API_KEY=sk-ant-your-api-key-here
 
 ### AI Provider Integration
 
-**Supported Providers:**
+Supported: OpenAI, Anthropic, Together AI, Groq, Ollama (local), Custom
 
-- **OpenAI**: GPT-4, GPT-4o, GPT-3.5-turbo
-- **Anthropic**: Claude 3.5 Sonnet, Claude 3 Opus
-- **Together AI**: Llama 3.1, Mixtral, CodeLlama
-- **Groq**: Ultra-fast Llama inference
-- **Ollama**: Local models (no API key needed)
-- **Custom**: Your own API endpoints
+API keys:
+- OpenAI: <https://platform.openai.com/api-keys> (starts with `sk-`)
+- Anthropic: <https://console.anthropic.com/> (starts with `sk-ant-`)
+- Groq: <https://console.groq.com/> (starts with `gsk-`)
+- Together AI: <https://api.together.xyz/>
+- Ollama: <https://ollama.ai/> (no key needed)
 
-**Getting API Keys:**
-
-**OpenAI:**
-
-1. Go to <https://platform.openai.com/api-keys>
-2. Create new secret key (starts with `sk-`)
-
-**Anthropic (Claude):**
-
-1. Go to <https://console.anthropic.com/>
-2. Create API key (starts with `sk-ant-`)
-
-**Groq:**
-
-1. Go to <https://console.groq.com/>
-2. Get API key (starts with `gsk-`)
-
-**Together AI:**
-
-1. Go to <https://api.together.xyz/>
-2. Get API key from dashboard
-
-**Ollama (Local - No Key Needed):**
-
-1. Install: <https://ollama.ai/>
-2. Run: `ollama run llama3.1`
-
-**Configuration Priority:**
-
-Settings are applied in this order (highest to lowest):
-
-1. **Command line args** (`--provider`, `--model`)
-2. **Config file** (`eval_config.yaml`)
-3. **Environment variables** (`OPENAI_API_KEY`, etc.)
-4. **Built-in defaults**
+Configuration priority:
+1. Command line args (`--provider`, `--model`)
+2. Config file (`eval_config.yaml`)
+3. Environment variables
+4. Built-in defaults
 
 ### Running Tests
 
@@ -582,12 +688,11 @@ uv run python eval_runner.py --mode both --output full_report.md
 
 ### Evaluation Runner Defaults
 
-The `eval_runner.py` script uses these defaults:
-
-- **Mode**: `detection` (default) - Use `--mode generation` or `--mode both` to change
-- **Parallel Execution**: Enabled by default - Use `--no-parallel` to disable
-- **Provider**: Attempts to auto-detect from available API keys
-- **Model**: Uses provider's recommended model unless specified
+Defaults:
+- Mode: `detection` (use `--mode generation` or `--mode both` to change)
+- Parallel execution: Enabled (use `--no-parallel` to disable)
+- Provider: Auto-detect from available API keys
+- Model: Provider's recommended model unless specified
 
 ### Available Test Cases
 
@@ -604,15 +709,14 @@ The `eval_runner.py` script uses these defaults:
 
 ### Understanding Results
 
-**Evaluation Metrics:**
+Metrics:
+- Accuracy: Percentage of correct detections
+- Precision: True positives / (True positives + False positives)
+- Recall: True positives / (True positives + False negatives)
+- F1 Score: Harmonic mean of precision and recall
+- Per-Category: Breakdown by principle type
 
-- **Accuracy**: Percentage of correct detections
-- **Precision**: True positives / (True positives + False positives)
-- **Recall**: True positives / (True positives + False negatives)
-- **F1 Score**: Harmonic mean of precision and recall
-- **Per-Category Performance**: Breakdown by principle type
-
-**Example Evaluation Report:**
+Example report:
 
 ```markdown
 # Engineering Principles Evaluation Report
@@ -728,22 +832,6 @@ jobs:
           cat eval_results.md >> $GITHUB_STEP_SUMMARY
 ```
 
-### Shell Aliases
-
-Add to `.bashrc` or `.zshrc`:
-
-```bash
-# Quick principle checks
-alias lvf-review='python ~/path/to/principles_cli.py review'
-alias lvf-generate='python ~/path/to/principles_cli.py generate'
-alias lvf-eval='python ~/path/to/eval_runner.py'
-
-# Platform-specific shortcuts
-alias lvf-android='lvf-review --platform android'
-alias lvf-ios='lvf-review --platform ios'
-alias lvf-web='lvf-review --platform web'
-```
-
 ## Examples
 
 ### Real-World Workflow: Adding a New Feature
@@ -797,7 +885,70 @@ uv run python principles_cli.py dependencies --platform web some-new-library
 
 ## Troubleshooting
 
-### Common Issues
+### Installation Issues
+
+**"Python not found" or version too old:**
+```bash
+# Check Python version (need 3.11+)
+python3 --version
+
+# Install Python 3.11+ from https://www.python.org/downloads/
+# Or use homebrew on macOS:
+brew install python@3.11
+```
+
+**"pipx: command not found" after installation:**
+```bash
+# Ensure ~/.local/bin is in your PATH
+export PATH="$HOME/.local/bin:$PATH"
+
+# Add to your shell profile (~/.zshrc or ~/.bash_profile):
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+**"leap-mcp-server: command not found":**
+```bash
+# Reinstall LEAP
+cd /path/to/engineering_principles
+pipx install --force .
+
+# Check installation
+which leap-mcp-server
+```
+
+### MCP Server Issues
+
+**Server won't start in Claude Desktop:**
+
+1. Check the MCP server log:
+   ```bash
+   tail -50 ~/Library/Logs/Claude/mcp-server-leap.log
+   ```
+
+2. Verify LEAP is installed:
+   ```bash
+   leap-mcp-server --help
+   ```
+
+3. Test server startup manually:
+   ```bash
+   leap-mcp-server
+   # Press Ctrl+C to stop
+   ```
+
+4. Reinstall if needed:
+   ```bash
+   cd /path/to/engineering_principles
+   pipx reinstall engineering_principles
+   ```
+
+**"spawn leap-mcp-server ENOENT" error:**
+- The `leap-mcp-server` command isn't in Claude's PATH
+- Make sure you used `pipx install .` (not just `pip install`)
+- Restart Claude Desktop after installation
+
+### Common CLI Issues
 
 **Evaluation Runner:**
 
@@ -807,7 +958,7 @@ uv run python principles_cli.py dependencies --platform web some-new-library
 - **"Model not found"**: Use `--list-providers` to see available models
 - **Low accuracy scores**: Try `--enhanced` flag for LLM-improved prompts with latest practices
 
-**CLI Issues:**
+**CLI Commands:**
 
 - **File not found errors**: Ensure you're running from the repository root
 - **Invalid platform**: Use `android`, `ios`, or `web` (lowercase)
@@ -817,19 +968,39 @@ uv run python principles_cli.py dependencies --platform web some-new-library
 ### Validation Commands
 
 ```bash
-# Test config loading
+# Test LEAP installation
+leap-review --help
+leap-eval --help
+leap-mcp-server --version 2>&1 | head -5
+
+# Test config loading (for developers)
 uv run python -c "from eval_runner import load_config; print(load_config('eval_config.yaml'))"
 
-# Test provider setup
+# Test provider setup (for developers)
 uv run python eval_runner.py --list-providers
 
-# Check YAML syntax
+# Check YAML syntax (for developers)
 uv run python -c "import yaml; yaml.safe_load(open('core/principles.yaml'))"
-
-# Verify CLI functionality
-uv run python principles_cli.py --help
-uv run python eval_runner.py --help
 ```
+
+### Getting Help
+
+If you're still having issues:
+
+1. **Check the logs:**
+   - Claude Desktop: `~/Library/Logs/Claude/mcp-server-leap.log`
+   - Claude Desktop main: `~/Library/Logs/Claude/main.log`
+
+2. **Try the install script:**
+   ```bash
+   ./install.sh
+   ```
+
+3. **Start fresh:**
+   ```bash
+   pipx uninstall engineering_principles
+   ./install.sh
+   ```
 
 ### Local Development (No API Costs)
 
@@ -857,7 +1028,7 @@ This project uses modern Python tooling for development:
 
 ```bash
 # Clone the repository
-git clone <repo-url>
+git clone git@github.com:james-livefront/engineering_principles.git
 cd engineering_principles
 
 # Quick setup using Makefile
@@ -930,11 +1101,11 @@ uv sync
 
 ### Project Standards
 
-- **Test Coverage**: Minimum 25% overall, aiming for 80% on business logic
-- **Type Hints**: All public functions should have type annotations
-- **Documentation**: All modules and classes should have docstrings
-- **Code Style**: Black formatting with 88-character line length
-- **Linting**: Ruff with strict settings for imports, code quality
+- Test coverage: 25% minimum, target 80% on business logic
+- Type hints: All public functions
+- Documentation: All modules and classes
+- Code style: Black, 88-character line length
+- Linting: Ruff with strict settings
 
 ## Maintenance & Evolution
 
@@ -1006,11 +1177,11 @@ uv run python eval_runner.py --mode detection --enhanced --output results.json
 
 ## Performance Metrics
 
-- **Base Detection**: 70%-85% accuracy on engineering principle violations
-- **Enhanced Mode**: Experimental - attempts to improve detection with LLM intelligence
-- **Platform Coverage**: Android, iOS, Web with platform-specific patterns
-- **Evaluation Speed**: ~30s base mode, ~60s improved mode per focus area
-- **Pattern Library**: 100+ regex patterns across security, accessibility, testing, architecture
+- Base detection: 70%-85% accuracy
+- Enhanced mode: Experimental LLM intelligence
+- Platform coverage: Android, iOS, Web
+- Evaluation speed: ~30s base, ~60s enhanced per focus area
+- Pattern library: 100+ regex patterns
 
 ### Contributing
 

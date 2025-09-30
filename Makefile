@@ -1,6 +1,6 @@
 # Engineering Principles Development Makefile
 
-.PHONY: help install test test-cov lint lint-fix format format-check typecheck clean pre-commit all ci watch install-hooks
+.PHONY: help install test test-cov lint lint-fix format format-check typecheck clean pre-commit all ci watch install-hooks mcp-server mcp-test
 
 # Default target
 help:
@@ -16,6 +16,10 @@ help:
 	@echo "  pre-commit  Run all quality checks (lint + format + typecheck + test)"
 	@echo "  clean       Clean up generated files"
 	@echo "  all         Run full pipeline (install + pre-commit)"
+	@echo ""
+	@echo "MCP Server:"
+	@echo "  mcp-server  Start the LEAP MCP server for AI agent integration"
+	@echo "  mcp-test    Test MCP server startup (checks for errors)"
 	@echo ""
 	@echo "CI/CD:"
 	@echo "  ci          CI pipeline (install + pre-commit)"
@@ -89,3 +93,17 @@ watch:
 install-hooks:
 	@echo "🪝 Installing pre-commit hooks..."
 	uv run pre-commit install
+
+# MCP Server targets
+mcp-server:
+	@echo "🚀 Starting LEAP MCP server..."
+	@echo "📖 Server will run on stdio for AI agent integration"
+	@echo "🛑 Press Ctrl+C to stop"
+	uv run python leap_mcp_server.py
+
+mcp-test:
+	@echo "🧪 Testing MCP server startup..."
+	@echo "Checking dependencies and server initialization..."
+	@uv run python -c "from leap_mcp_server import server; print('✅ MCP server imports successfully')" 2>&1 || echo "❌ MCP server import failed"
+	@echo "Verifying LEAP data loading..."
+	@uv run python -c "from leap import LeapLoader; loader = LeapLoader(); loader.load_principles(); print('✅ LEAP data loads successfully')" 2>&1 || echo "❌ LEAP data loading failed"
