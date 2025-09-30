@@ -192,7 +192,7 @@ class PrinciplesCLI:
     def generate_review_prompt(self, platform: str, focus_areas: list[str]) -> str:
         """Generate code review prompt"""
 
-        platform_title = self.get_platform_title(platform)
+        platform_title = self.loader.get_platform_title(platform)
 
         # Load severity data
         severity_file = self.loader.modules_path / "detection" / "severity.yaml"
@@ -406,10 +406,6 @@ Generate production-ready code following Livefront engineering standards.
 5. Match existing code style and architecture patterns
 """
         return prompt
-
-    def get_platform_title(self, platform: str) -> str:
-        """Get formatted platform title - delegates to loader"""
-        return self.loader.get_platform_title(platform)
 
     def generate_dependency_prompt(self, platform: str, dependencies: list[str]) -> str:
         """Generate dependency evaluation prompt"""
