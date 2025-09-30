@@ -340,5 +340,10 @@ async def main() -> None:
         )
 
 
-if __name__ == "__main__":
+def main_cli() -> None:
+    """CLI entry point for pipx installation."""
     asyncio.run(main())
+
+
+if __name__ == "__main__":
+    main_cli()

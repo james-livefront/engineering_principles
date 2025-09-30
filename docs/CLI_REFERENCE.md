@@ -2,12 +2,36 @@
 
 Quick reference for daily usage of the engineering principles CLI.
 
+## Installation
+
+**For end users (recommended):**
+```bash
+pipx install .
+```
+
+**For developers:**
+```bash
+uv sync
+```
+
+---
+
 ## Commands
+
+All commands are available in two forms:
+- **Global** (after `pipx install .`): `leap-review`, `leap-eval`
+- **Local** (for development): `uv run python principles_cli.py`, `uv run python eval_runner.py`
 
 ### `review` - Code Review Prompts
 
+**Global:**
 ```bash
-python principles_cli.py review --platform <android|ios|web> [--focus <areas>]
+leap-review review --platform <android|ios|web> [--focus <areas>]
+```
+
+**Local:**
+```bash
+uv run python principles_cli.py review --platform <android|ios|web> [--focus <areas>]
 ```
 
 **Default focus**: `security,accessibility,testing`
@@ -15,15 +39,26 @@ python principles_cli.py review --platform <android|ios|web> [--focus <areas>]
 **Examples:**
 
 ```bash
-python principles_cli.py review --platform web --focus security,accessibility
-python principles_cli.py review --platform android --focus security
-python principles_cli.py review --platform ios  # uses default focus
+# Using global command
+leap-review review --platform web --focus security,accessibility
+leap-review review --platform android --focus security
+leap-review review --platform ios  # uses default focus
+
+# Using local command (development)
+uv run python principles_cli.py review --platform web --focus security,accessibility
+uv run python principles_cli.py review --platform android --focus security
 ```
 
 ### `generate` - Code Writing Prompts
 
+**Global:**
 ```bash
-python principles_cli.py generate --platform <android|ios|web> [--component <type>]
+leap-review generate --platform <android|ios|web> [--component <type>]
+```
+
+**Local:**
+```bash
+uv run python principles_cli.py generate --platform <android|ios|web> [--component <type>]
 ```
 
 **Component types**: `ui` (default), `business-logic`, `data-layer`
@@ -31,15 +66,25 @@ python principles_cli.py generate --platform <android|ios|web> [--component <typ
 **Examples:**
 
 ```bash
-python principles_cli.py generate --platform web --component ui
-python principles_cli.py generate --platform android --component business-logic
-python principles_cli.py generate --platform ios  # defaults to ui component
+# Using global command
+leap-review generate --platform web --component ui
+leap-review generate --platform android --component business-logic
+leap-review generate --platform ios  # defaults to ui component
+
+# Using local command (development)
+uv run python principles_cli.py generate --platform web --component ui
 ```
 
 ### `architecture` - Architecture Guidance
 
+**Global:**
 ```bash
-python principles_cli.py architecture --platform <android|ios|web> [--layer <layer>]
+leap-review architecture --platform <android|ios|web> [--layer <layer>]
+```
+
+**Local:**
+```bash
+uv run python principles_cli.py architecture --platform <android|ios|web> [--layer <layer>]
 ```
 
 **Layer types**: `presentation`, `business`, `data`
@@ -47,21 +92,35 @@ python principles_cli.py architecture --platform <android|ios|web> [--layer <lay
 **Examples:**
 
 ```bash
-python principles_cli.py architecture --platform web --layer data
-python principles_cli.py architecture --platform ios --layer presentation
+# Using global command
+leap-review architecture --platform web --layer data
+leap-review architecture --platform ios --layer presentation
+
+# Using local command (development)
+uv run python principles_cli.py architecture --platform web --layer data
 ```
 
 ### `dependencies` - Dependency Evaluation
 
+**Global:**
 ```bash
-python principles_cli.py dependencies --platform <android|ios|web> --check <deps>
+leap-review dependencies --platform <android|ios|web> --check <deps>
+```
+
+**Local:**
+```bash
+uv run python principles_cli.py dependencies --platform <android|ios|web> --check <deps>
 ```
 
 **Examples:**
 
 ```bash
-python principles_cli.py dependencies --platform web --check react,lodash
-python principles_cli.py dependencies --platform android --check rxjava,retrofit,gson
+# Using global command
+leap-review dependencies --platform web --check react,lodash
+leap-review dependencies --platform android --check rxjava,retrofit,gson
+
+# Using local command (development)
+uv run python principles_cli.py dependencies --platform web --check react,lodash
 ```
 
 ## Focus Areas
@@ -76,10 +135,16 @@ python principles_cli.py dependencies --platform android --check rxjava,retrofit
 - `localization` - Internationalization
 - `compatibility` - Version support
 
-### `eval_runner` - Test Prompt Effectiveness
+### `eval` - Test Prompt Effectiveness
 
+**Global:**
 ```bash
-python eval_runner.py --mode <detection|generation|both> [options]
+leap-eval --mode <detection|generation|both> [options]
+```
+
+**Local:**
+```bash
+uv run python eval_runner.py --mode <detection|generation|both> [options]
 ```
 
 **Options:**
@@ -93,48 +158,78 @@ python eval_runner.py --mode <detection|generation|both> [options]
 **Examples:**
 
 ```bash
-# Test detection across all principles
-python eval_runner.py --mode detection
+# Using global command
+leap-eval --mode detection
+leap-eval --mode detection --principles security accessibility
+leap-eval --prompt-file my_prompt.txt --output report.md
+leap-eval --mode generation --categories ui_component
 
-# Test specific principles only
-python eval_runner.py --mode detection --principles security accessibility
-
-# Test custom prompt file (defaults to detection mode, all principles)
-python eval_runner.py --prompt-file my_prompt.txt --output report.md
-
-# Test custom prompt with specific principles
-python eval_runner.py --prompt-file my_prompt.txt --principles security accessibility
-
-# Test generation challenges
-python eval_runner.py --mode generation --categories ui_component
+# Using local command (development)
+uv run python eval_runner.py --mode detection
+uv run python eval_runner.py --mode detection --principles security accessibility
+uv run python eval_runner.py --prompt-file my_prompt.txt --output report.md
 ```
 
 ## Common Patterns
 
+### Using Global Commands (After pipx install)
+
 ```bash
 # Daily code review
-python principles_cli.py review --platform web --focus security,accessibility
+leap-review review --platform web --focus security,accessibility
 
 # Before starting new feature
-python principles_cli.py generate --platform android --component ui
+leap-review generate --platform android --component ui
 
 # Architecture decisions
-python principles_cli.py architecture --platform ios --layer business
+leap-review architecture --platform ios --layer business
 
 # Dependency evaluation
-python principles_cli.py dependencies --platform web --check new-library
+leap-review dependencies --platform web --check new-library
 
 # Test prompt effectiveness
-python eval_runner.py --mode detection --principles security
+leap-eval --mode detection --principles security
+```
+
+### Using Local Commands (Development)
+
+```bash
+# Daily code review
+uv run python principles_cli.py review --platform web --focus security,accessibility
+
+# Before starting new feature
+uv run python principles_cli.py generate --platform android --component ui
+
+# Architecture decisions
+uv run python principles_cli.py architecture --platform ios --layer business
+
+# Dependency evaluation
+uv run python principles_cli.py dependencies --platform web --check new-library
+
+# Test prompt effectiveness
+uv run python eval_runner.py --mode detection --principles security
 ```
 
 ## Shell Aliases
 
+### For Global Commands
+
 ```bash
-alias pr='python path/to/principles_cli.py'
+alias pr='leap-review'
+alias pr-web='leap-review review --platform web'
+alias pr-android='leap-review review --platform android'
+alias pr-ios='leap-review review --platform ios'
+alias pr-eval='leap-eval'
+```
+
+### For Local Development
+
+```bash
+alias pr='uv run python principles_cli.py'
 alias pr-web='pr review --platform web'
 alias pr-android='pr review --platform android'
 alias pr-ios='pr review --platform ios'
+alias pr-eval='uv run python eval_runner.py'
 ```
 
 For complete documentation, see [README.md](README.md).
