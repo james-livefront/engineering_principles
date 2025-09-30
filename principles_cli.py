@@ -3,7 +3,6 @@
 
 import argparse
 import sys
-from pathlib import Path
 from typing import Any
 
 from leap import LeapLoader
@@ -13,34 +12,6 @@ from leap.filters import filter_principles_by_focus, map_focus_areas_to_enforcem
 class PrinciplesCLI:
     def __init__(self) -> None:
         self.loader = LeapLoader()
-        # Keep these for backwards compatibility with any direct access
-        self.base_path = self.loader.base_path
-        self.core_path = self.loader.core_path
-        self.modules_path = self.loader.modules_path
-
-    def load_yaml(self, file_path: Path) -> dict[str, Any]:
-        """Load YAML safely - delegates to loader"""
-        return self.loader.load_yaml(file_path)
-
-    def load_principles(self) -> dict[str, Any]:
-        """Load principles.yaml - delegates to loader"""
-        return self.loader.load_principles()
-
-    def load_platforms(self) -> dict[str, Any]:
-        """Load platforms.yaml - delegates to loader"""
-        return self.loader.load_platforms()
-
-    def load_philosophy(self) -> dict[str, Any]:
-        """Load philosophy.yaml - delegates to loader"""
-        return self.loader.load_philosophy()
-
-    def load_enforcement(self) -> dict[str, Any]:
-        """Load enforcement.yaml - delegates to loader"""
-        return self.loader.load_enforcement()
-
-    def get_common_prompt_data(self, platform: str) -> tuple[dict[str, Any], str, dict[str, Any]]:
-        """Get common data needed by most prompt generation methods - delegates to loader"""
-        return self.loader.get_common_prompt_data(platform)
 
     def format_principles(
         self, principles: dict[str, Any], focus_areas: list[str] | None = None
@@ -224,7 +195,8 @@ class PrinciplesCLI:
         platform_title = self.get_platform_title(platform)
 
         # Load severity data
-        severity_data = self.load_yaml(self.modules_path / "detection" / "severity.yaml")
+        severity_file = self.loader.modules_path / "detection" / "severity.yaml"
+        severity_data = self.loader.load_yaml(severity_file)
         severity_levels = severity_data.get("severity_levels", severity_data)
 
         # Load detection rules using existing method
@@ -301,7 +273,7 @@ After your review, the following automated checks will run:
         """Format enforcement context showing what CI will check"""
         output = []
 
-        enforcement = self.load_enforcement()
+        enforcement = self.loader.load_enforcement()
         ci_pipeline = enforcement.get("enforcement_tools", {}).get("ci_pipeline", {})
         stages = ci_pipeline.get("stages", [])
 
@@ -375,14 +347,14 @@ After your review, the following automated checks will run:
     def generate_code_prompt(self, platform: str, component_type: str) -> str:
         """Generate code writing prompt with comprehensive guidance"""
         # Load common data
-        principles, platform_title, platform_config = self.get_common_prompt_data(platform)
-        philosophy_data = self.load_philosophy()
+        principles, platform_title, platform_config = self.loader.get_common_prompt_data(platform)
+        philosophy_data = self.loader.load_philosophy()
 
         # Load generation guidance
-        guidance_file = self.modules_path / "generation" / "guidance.yaml"
+        guidance_file = self.loader.modules_path / "generation" / "guidance.yaml"
         guidance = {}
         if guidance_file.exists():
-            guidance = self.load_yaml(guidance_file)
+            guidance = self.loader.load_yaml(guidance_file)
 
         # Map component types to relevant principles
         component_to_principles = {
@@ -442,7 +414,7 @@ Generate production-ready code following Livefront engineering standards.
     def generate_dependency_prompt(self, platform: str, dependencies: list[str]) -> str:
         """Generate dependency evaluation prompt"""
         # Load common data
-        principles, platform_title, platform_config = self.get_common_prompt_data(platform)
+        principles, platform_title, platform_config = self.loader.get_common_prompt_data(platform)
         approved_deps_config = platform_config.get("approved_dependencies", {})
 
         # Extract actual dependency names from nested structure
@@ -516,7 +488,7 @@ For each dependency, provide:
     def generate_architecture_prompt(self, platform: str, layer: str) -> str:
         """Generate architecture guidance prompt"""
         # Load common data
-        principles, platform_title, platform_config = self.get_common_prompt_data(platform)
+        principles, platform_title, platform_config = self.loader.get_common_prompt_data(platform)
 
         # Streamlined architecture principles
         arch_principles = self._format_focused_architecture(
@@ -626,12 +598,12 @@ Provide specific structure and implementation recommendations.
 
     def _load_detection_rules(self, area: str, platform: str | None = None) -> dict[str, Any]:
         """Load detection rules from YAML files"""
-        detection_file = self.modules_path / "detection" / "rules" / f"{area}.yaml"
+        detection_file = self.loader.modules_path / "detection" / "rules" / f"{area}.yaml"
 
         if not detection_file.exists():
             return {}
 
-        detection_data = self.load_yaml(detection_file)
+        detection_data = self.loader.load_yaml(detection_file)
         rules = detection_data.get("rules", {})
 
         # Filter platform-specific patterns if platform is specified
