@@ -54,7 +54,6 @@ def filter_detection_rules_by_platform(rules: dict[str, Any], platform: str) -> 
             if not isinstance(rule_data, dict):
                 continue
 
-            # Check if rule has platform restrictions
             platforms = rule_data.get("platforms", [])
             if not platforms or platform in platforms:
                 filtered_category[rule_name] = rule_data

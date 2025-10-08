@@ -1,6 +1,6 @@
 # Engineering Principles Development Makefile
 
-.PHONY: help install test test-cov lint lint-fix format format-check typecheck clean pre-commit all ci watch install-hooks mcp-server mcp-test
+.PHONY: help install test test-cov test-docs lint lint-fix format format-check typecheck clean pre-commit all ci watch install-hooks mcp-server mcp-test
 
 # Default target
 help:
@@ -8,6 +8,7 @@ help:
 	@echo "  install     Install project dependencies"
 	@echo "  test        Run all tests"
 	@echo "  test-cov    Run tests with coverage report"
+	@echo "  test-docs   Test all documentation examples"
 	@echo "  lint        Run linting (ruff)"
 	@echo "  lint-fix    Run linting with auto-fix"
 	@echo "  format      Format code (black + ruff)"
@@ -41,6 +42,10 @@ test:
 test-cov:
 	@echo "Running tests with coverage..."
 	uv run pytest --cov-report=term-missing --cov-report=html
+
+test-docs:
+	@echo "Testing documentation examples..."
+	uv run python tests/test_documentation_examples.py
 
 lint:
 	@echo "Running linter..."

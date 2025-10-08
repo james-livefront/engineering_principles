@@ -1,15 +1,17 @@
 # CLI Reference
 
-Quick reference for daily usage of the engineering principles CLI.
+Reference for the engineering principles CLI.
 
 ## Installation
 
-**For end users (recommended):**
+**End users:**
+
 ```bash
 pipx install .
 ```
 
-**For developers:**
+**Developers:**
+
 ```bash
 uv sync
 ```
@@ -19,22 +21,28 @@ uv sync
 ## Commands
 
 All commands are available in two forms:
+
 - **Global** (after `pipx install .`): `leap-review`, `leap-eval`
 - **Local** (for development): `uv run python principles_cli.py`, `uv run python eval_runner.py`
 
 ### `review` - Code Review Prompts
 
 **Global:**
+
 ```bash
-leap-review review --platform <android|ios|web> [--focus <areas>]
+leap-review review --platform <android|ios|web> [--focus <areas>] [--enhanced]
 ```
 
 **Local:**
+
 ```bash
-uv run python principles_cli.py review --platform <android|ios|web> [--focus <areas>]
+uv run python principles_cli.py review --platform <android|ios|web> [--focus <areas>] [--enhanced]
 ```
 
 **Default focus**: `security,accessibility,testing`
+
+**Options:**
+- `--enhanced`: Enhance prompt with latest 2024/2025 practices using OpenAI (requires `OPENAI_API_KEY`)
 
 **Examples:**
 
@@ -43,25 +51,31 @@ uv run python principles_cli.py review --platform <android|ios|web> [--focus <ar
 leap-review review --platform web --focus security,accessibility
 leap-review review --platform android --focus security
 leap-review review --platform ios  # uses default focus
+leap-review review --platform web --enhanced  # AI-enhanced with latest patterns
 
 # Using local command (development)
 uv run python principles_cli.py review --platform web --focus security,accessibility
-uv run python principles_cli.py review --platform android --focus security
+uv run python principles_cli.py review --platform android --focus security --enhanced
 ```
 
 ### `generate` - Code Writing Prompts
 
 **Global:**
+
 ```bash
-leap-review generate --platform <android|ios|web> [--component <type>]
+leap-review generate --platform <android|ios|web> [--component <type>] [--enhanced]
 ```
 
 **Local:**
+
 ```bash
-uv run python principles_cli.py generate --platform <android|ios|web> [--component <type>]
+uv run python principles_cli.py generate --platform <android|ios|web> [--component <type>] [--enhanced]
 ```
 
 **Component types**: `ui` (default), `business-logic`, `data-layer`
+
+**Options:**
+- `--enhanced`: Enhance prompt with latest 2024/2025 practices using OpenAI (requires `OPENAI_API_KEY`)
 
 **Examples:**
 
@@ -70,19 +84,22 @@ uv run python principles_cli.py generate --platform <android|ios|web> [--compone
 leap-review generate --platform web --component ui
 leap-review generate --platform android --component business-logic
 leap-review generate --platform ios  # defaults to ui component
+leap-review generate --platform web --enhanced  # AI-enhanced code generation prompt
 
 # Using local command (development)
-uv run python principles_cli.py generate --platform web --component ui
+uv run python principles_cli.py generate --platform web --component ui --enhanced
 ```
 
 ### `architecture` - Architecture Guidance
 
 **Global:**
+
 ```bash
 leap-review architecture --platform <android|ios|web> [--layer <layer>]
 ```
 
 **Local:**
+
 ```bash
 uv run python principles_cli.py architecture --platform <android|ios|web> [--layer <layer>]
 ```
@@ -103,11 +120,13 @@ uv run python principles_cli.py architecture --platform web --layer data
 ### `dependencies` - Dependency Evaluation
 
 **Global:**
+
 ```bash
 leap-review dependencies --platform <android|ios|web> --check <deps>
 ```
 
 **Local:**
+
 ```bash
 uv run python principles_cli.py dependencies --platform <android|ios|web> --check <deps>
 ```
@@ -138,11 +157,13 @@ uv run python principles_cli.py dependencies --platform web --check react,lodash
 ### `eval` - Test Prompt Effectiveness
 
 **Global:**
+
 ```bash
 leap-eval --mode <detection|generation|both> [options]
 ```
 
 **Local:**
+
 ```bash
 uv run python eval_runner.py --mode <detection|generation|both> [options]
 ```
@@ -154,6 +175,9 @@ uv run python eval_runner.py --mode <detection|generation|both> [options]
 - `--categories`: Specific categories to test (generation mode)
 - `--output`: Output file for report
 - `--prompt-file`: File containing prompt to test
+- `--compare-prompts`: Compare multiple prompt files (.txt, .md)
+- `--prompt-names`: Custom names for prompts (optional, used with --compare-prompts)
+- `--no-parallel`: Disable parallel evaluation (enabled by default)
 
 **Examples:**
 
@@ -164,10 +188,17 @@ leap-eval --mode detection --principles security accessibility
 leap-eval --prompt-file my_prompt.txt --output report.md
 leap-eval --mode generation --categories ui_component
 
+# Compare multiple prompts
+leap-eval --compare-prompts prompt1.md prompt2.md prompt3.md
+leap-eval --compare-prompts *.md --prompt-names Security Accessibility General --output comparison.json
+
 # Using local command (development)
 uv run python eval_runner.py --mode detection
 uv run python eval_runner.py --mode detection --principles security accessibility
 uv run python eval_runner.py --prompt-file my_prompt.txt --output report.md
+
+# Compare multiple prompts (local)
+uv run python eval_runner.py --compare-prompts prompt1.md prompt2.md
 ```
 
 ## Common Patterns

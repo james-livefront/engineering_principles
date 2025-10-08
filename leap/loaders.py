@@ -63,12 +63,10 @@ class LeapLoader:
         rules_path = self.modules_path / "detection" / "rules"
 
         if focus_area:
-            # Load specific rules file
             file_path = rules_path / f"{focus_area}_rules.yaml"
             if file_path.exists():
                 return self.load_yaml(file_path)
 
-        # Load all rules files and combine
         all_rules = {}
         if rules_path.exists():
             for rule_file in rules_path.glob("*_rules.yaml"):

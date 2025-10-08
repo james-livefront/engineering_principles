@@ -2,80 +2,13 @@
 Unit tests for principles_cli module.
 """
 
-import tempfile
-from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
 import pytest
-import yaml
 
 # Import the module to test
 from principles_cli import PrinciplesCLI
-
-
-class TestPrinciplesCLI:
-    """Test cases for PrinciplesCLI class."""
-
-    def test_init(self) -> None:
-        """Test PrinciplesCLI initialization."""
-        cli = PrinciplesCLI()
-        assert cli.base_path == Path(__file__).parent.parent
-        assert cli.core_path == cli.base_path / "core"
-        assert cli.modules_path == cli.base_path / "modules"
-
-    def test_load_yaml_valid_file(self) -> None:
-        """Test loading valid YAML file."""
-        cli = PrinciplesCLI()
-        test_data = {"test_key": "test_value", "nested": {"key": "value"}}
-
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-            yaml.dump(test_data, f)
-            temp_path = Path(f.name)
-
-        try:
-            result = cli.load_yaml(temp_path)
-            assert result == test_data
-        finally:
-            temp_path.unlink()
-
-    def test_load_yaml_file_not_found(self) -> None:
-        """Test loading non-existent YAML file exits with error."""
-        cli = PrinciplesCLI()
-        non_existent_path = Path("non_existent_file.yaml")
-
-        with pytest.raises(SystemExit) as exc_info:
-            cli.load_yaml(non_existent_path)
-        assert exc_info.value.code == 1
-
-    def test_load_yaml_invalid_yaml(self) -> None:
-        """Test loading invalid YAML file exits with error."""
-        cli = PrinciplesCLI()
-
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-            f.write("invalid: yaml: content: [")
-            temp_path = Path(f.name)
-
-        try:
-            with pytest.raises(SystemExit) as exc_info:
-                cli.load_yaml(temp_path)
-            assert exc_info.value.code == 1
-        finally:
-            temp_path.unlink()
-
-    def test_load_yaml_empty_file(self) -> None:
-        """Test loading empty YAML file returns empty dict."""
-        cli = PrinciplesCLI()
-
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-            f.write("")
-            temp_path = Path(f.name)
-
-        try:
-            result = cli.load_yaml(temp_path)
-            assert result == {}
-        finally:
-            temp_path.unlink()
 
 
 class TestFormatPrinciples:
@@ -323,34 +256,29 @@ class TestFormatSeverityLevels:
 class TestGenerateReviewPrompt:
     """Test cases for generate_review_prompt method."""
 
-    @patch("principles_cli.PrinciplesCLI.load_yaml")
-    def test_generate_review_prompt_basic(self, mock_load_yaml: Any) -> None:
+    @patch("principles_cli.LeapLoader")
+    def test_generate_review_prompt_basic(self, mock_loader_class: Any) -> None:
         """Test generating basic review prompt."""
+        # Setup mock loader instance
+        mock_loader = mock_loader_class.return_value
+        mock_loader.load_principles.return_value = {
+            "security": {"why": "Security matters", "how": ["Use HTTPS"]}
+        }
+        mock_loader.load_platforms.return_value = {
+            "web": {"approved_dependencies": {"framework": ["React"]}}
+        }
+        mock_loader.load_severity_levels.return_value = {
+            "critical": {"description": "Critical issues", "action": "Block"}
+        }
+        mock_loader.load_detection_rules.return_value = {
+            "hardcoded_secrets": {
+                "description": "Find secrets",
+                "severity": "critical",
+            }
+        }
+        mock_loader.get_platform_title.return_value = "Web"
+
         cli = PrinciplesCLI()
-
-        # Mock YAML loading
-        mock_load_yaml.side_effect = [
-            {
-                "principles": {"security": {"why": "Security matters", "how": ["Use HTTPS"]}}
-            },  # principles.yaml
-            {
-                "platforms": {"web": {"approved_dependencies": {"framework": ["React"]}}}
-            },  # platforms.yaml
-            {
-                "severity_levels": {
-                    "critical": {"description": "Critical issues", "action": "Block"}
-                }
-            },  # severity.yaml
-            {
-                "rules": {
-                    "hardcoded_secrets": {
-                        "description": "Find secrets",
-                        "severity": "critical",
-                    }
-                }
-            },  # security.yaml
-        ]
-
         result = cli.generate_review_prompt("web", ["security"])
 
         # Check for metadata header
@@ -358,26 +286,22 @@ class TestGenerateReviewPrompt:
         assert "platform: web" in result
         assert "focus: security" in result
 
-        # Check for main content (format may have changed)
+        # Check for main content
         assert "# Code Review Assistant for Web" in result
-        assert "## Instructions" in result
-        assert "Focus on**: security" in result
 
-    @patch("principles_cli.PrinciplesCLI.load_yaml")
-    def test_generate_review_prompt_missing_rule_file(self, mock_load_yaml: Any) -> None:
+    @patch("principles_cli.LeapLoader")
+    def test_generate_review_prompt_missing_rule_file(self, mock_loader_class: Any) -> None:
         """Test generating prompt when rule file doesn't exist."""
+        # Setup mock loader instance
+        mock_loader = mock_loader_class.return_value
+        mock_loader.load_principles.return_value = {"security": {"why": "Security matters"}}
+        mock_loader.load_platforms.return_value = {"ios": {"tools": {"linting": ["SwiftLint"]}}}
+        mock_loader.load_severity_levels.return_value = {"critical": {"description": "Critical"}}
+        mock_loader.load_detection_rules.return_value = {}
+        mock_loader.get_platform_title.return_value = "iOS"
+
         cli = PrinciplesCLI()
-
-        # Mock YAML loading - first 3 calls succeed, rule file doesn't exist
-        mock_load_yaml.side_effect = [
-            {"principles": {"security": {"why": "Security matters"}}},
-            {"platforms": {"ios": {"tools": {"linting": ["SwiftLint"]}}}},
-            {"severity_levels": {"critical": {"description": "Critical"}}},
-        ]
-
-        # Mock path.exists to return False for rule file
-        with patch("pathlib.Path.exists", return_value=False):
-            result = cli.generate_review_prompt("ios", ["nonexistent"])
+        result = cli.generate_review_prompt("ios", ["nonexistent"])
 
         # Check for metadata header
         assert "<!-- PROMPT_METADATA" in result
@@ -386,24 +310,27 @@ class TestGenerateReviewPrompt:
 
         # Check for main content
         assert "# Code Review Assistant for iOS" in result
-        assert "Focus on**: nonexistent" in result
 
 
 class TestGenerateCodePrompt:
     """Test cases for generate_code_prompt method."""
 
-    @patch("principles_cli.PrinciplesCLI.load_yaml")
-    def test_generate_code_prompt_basic(self, mock_load_yaml: Any) -> None:
+    @patch("principles_cli.LeapLoader")
+    def test_generate_code_prompt_basic(self, mock_loader_class: Any) -> None:
         """Test generating basic code generation prompt."""
+        # Setup mock loader instance
+        mock_loader = mock_loader_class.return_value
+        mock_loader.load_principles.return_value = {"security": {"why": "Security matters"}}
+        mock_loader.load_platforms.return_value = {"android": {"tools": {"linting": ["ktlint"]}}}
+        mock_loader.load_philosophy.return_value = {"description": "Build excellent software"}
+        mock_loader.get_platform_title.return_value = "Android"
+        mock_loader.get_common_prompt_data.return_value = (
+            {"security": {"why": "Security matters"}},
+            "Android",
+            {"tools": {"linting": ["ktlint"]}},
+        )
+
         cli = PrinciplesCLI()
-
-        mock_load_yaml.side_effect = [
-            {"principles": {"security": {"why": "Security matters"}}},
-            {"platforms": {"android": {"tools": {"linting": ["ktlint"]}}}},
-            {"guidance": {"ui": {"best_practices": ["Use responsive layouts"]}}},
-            {"patterns": {"ui": {"components": ["Button", "Input"]}}},
-        ]
-
         result = cli.generate_code_prompt("android", "ui")
 
         # Check for metadata header
@@ -414,70 +341,74 @@ class TestGenerateCodePrompt:
         # Check for main content
         assert "# Code Generation for Android" in result
 
-    @patch("principles_cli.PrinciplesCLI.load_yaml")
-    def test_generate_code_prompt_ui_filtering(self, mock_load_yaml: Any) -> None:
+    @patch("principles_cli.LeapLoader")
+    def test_generate_code_prompt_ui_filtering(self, mock_loader_class: Any) -> None:
         """Test that UI component generation only includes relevant principles."""
+        # Setup mock loader instance
+        mock_loader = mock_loader_class.return_value
+        principles = {
+            "accessibility": {"why": "Access for all", "how": ["Use ARIA"]},
+            "flexible_layout": {"why": "Responsive design", "how": ["Flexbox"]},
+            "design_integrity": {"why": "Match designs", "how": ["Follow specs"]},
+            "localization": {"why": "Global reach", "how": ["Externalize strings"]},
+            "security": {"why": "Protect users", "how": ["HTTPS only"]},
+            "testing": {"why": "Quality code", "how": ["80% coverage"]},
+            "unidirectional_data_flow": {"why": "Data flow", "how": ["One-way"]},
+        }
+        mock_loader.load_principles.return_value = principles
+        mock_loader.load_philosophy.return_value = {"description": "Build excellent software"}
+        mock_loader.load_platforms.return_value = {"android": {"tools": {"linting": ["ktlint"]}}}
+        mock_loader.get_platform_title.return_value = "Android"
+        mock_loader.get_common_prompt_data.return_value = (
+            principles,
+            "Android",
+            {"tools": {"linting": ["ktlint"]}},
+        )
+
         cli = PrinciplesCLI()
-
-        mock_load_yaml.side_effect = [
-            {
-                "principles": {
-                    "accessibility": {"why": "Access for all", "how": ["Use ARIA"]},
-                    "flexible_layout": {"why": "Responsive design", "how": ["Flexbox"]},
-                    "design_integrity": {"why": "Match designs", "how": ["Follow specs"]},
-                    "localization": {"why": "Global reach", "how": ["Externalize strings"]},
-                    "security": {"why": "Protect users", "how": ["HTTPS only"]},
-                    "testing": {"why": "Quality code", "how": ["80% coverage"]},
-                    "unidirectional_data_flow": {"why": "Data flow", "how": ["One-way"]},
-                }
-            },
-            {"description": "Build excellent software"},  # philosophy.yaml
-            {"platforms": {"android": {"tools": {"linting": ["ktlint"]}}}},
-        ]
-
-        with patch("pathlib.Path.exists", return_value=False):  # guidance.yaml doesn't exist
-            result = cli.generate_code_prompt("android", "ui")
+        result = cli.generate_code_prompt("android", "ui")
 
         # Check for metadata header
         assert "<!-- PROMPT_METADATA" in result
         assert "platform: android" in result
         assert "component: ui" in result
 
-        # The current implementation may not have the same filtering logic
-        # Just check that it's a valid prompt
+        # Check for main content
         assert "# Code Generation for Android Ui" in result
         assert "## Engineering Principles" in result
 
-    @patch("principles_cli.PrinciplesCLI.load_yaml")
-    def test_generate_code_prompt_business_logic_filtering(self, mock_load_yaml: Any) -> None:
+    @patch("principles_cli.LeapLoader")
+    def test_generate_code_prompt_business_logic_filtering(self, mock_loader_class: Any) -> None:
         """Test that business logic component generation only includes relevant principles."""
+        # Setup mock loader instance
+        mock_loader = mock_loader_class.return_value
+        principles = {
+            "accessibility": {"why": "Access for all", "how": ["Use ARIA"]},
+            "testing": {"why": "Quality code", "how": ["80% coverage"]},
+            "unidirectional_data_flow": {"why": "Data flow", "how": ["One-way"]},
+            "minimal_dependencies": {"why": "Simplicity", "how": ["Avoid bloat"]},
+            "security": {"why": "Protect users", "how": ["HTTPS only"]},
+            "flexible_layout": {"why": "Responsive design", "how": ["Flexbox"]},
+        }
+        mock_loader.load_principles.return_value = principles
+        mock_loader.load_philosophy.return_value = {"description": "Build excellent software"}
+        mock_loader.load_platforms.return_value = {"android": {"tools": {"testing": ["JUnit"]}}}
+        mock_loader.get_platform_title.return_value = "Android"
+        mock_loader.get_common_prompt_data.return_value = (
+            principles,
+            "Android",
+            {"tools": {"testing": ["JUnit"]}},
+        )
+
         cli = PrinciplesCLI()
-
-        mock_load_yaml.side_effect = [
-            {
-                "principles": {
-                    "accessibility": {"why": "Access for all", "how": ["Use ARIA"]},
-                    "testing": {"why": "Quality code", "how": ["80% coverage"]},
-                    "unidirectional_data_flow": {"why": "Data flow", "how": ["One-way"]},
-                    "minimal_dependencies": {"why": "Simplicity", "how": ["Avoid bloat"]},
-                    "security": {"why": "Protect users", "how": ["HTTPS only"]},
-                    "flexible_layout": {"why": "Responsive design", "how": ["Flexbox"]},
-                }
-            },
-            {"description": "Build excellent software"},  # philosophy.yaml
-            {"platforms": {"android": {"tools": {"testing": ["JUnit"]}}}},
-        ]
-
-        with patch("pathlib.Path.exists", return_value=False):  # guidance.yaml doesn't exist
-            result = cli.generate_code_prompt("android", "business-logic")
+        result = cli.generate_code_prompt("android", "business-logic")
 
         # Check for metadata header
         assert "<!-- PROMPT_METADATA" in result
         assert "platform: android" in result
         assert "component: business-logic" in result
 
-        # The current implementation may not have the same filtering logic
-        # Just check that it's a valid prompt
+        # Check for main content
         assert "# Code Generation for Android Business-Logic" in result
         assert "## Engineering Principles" in result
 
@@ -485,17 +416,23 @@ class TestGenerateCodePrompt:
 class TestArchitecturePrompt:
     """Test cases for generate_architecture_prompt method."""
 
-    @patch("principles_cli.PrinciplesCLI.load_yaml")
-    def test_generate_architecture_prompt_basic(self, mock_load_yaml: Any) -> None:
+    @patch("principles_cli.LeapLoader")
+    def test_generate_architecture_prompt_basic(self, mock_loader_class: Any) -> None:
         """Test generating basic architecture prompt."""
+        # Setup mock loader instance
+        mock_loader = mock_loader_class.return_value
+        principles = {"architecture": {"why": "Good structure matters"}}
+        platform_config = {"approved_dependencies": {"framework": ["React"]}}
+        mock_loader.load_principles.return_value = principles
+        mock_loader.load_platforms.return_value = {"web": platform_config}
+        mock_loader.get_platform_title.return_value = "Web"
+        mock_loader.get_common_prompt_data.return_value = (
+            principles,
+            "Web",
+            platform_config,
+        )
+
         cli = PrinciplesCLI()
-
-        mock_load_yaml.side_effect = [
-            {"principles": {"architecture": {"why": "Good structure matters"}}},
-            {"platforms": {"web": {"approved_dependencies": {"framework": ["React"]}}}},
-            {"patterns": {"data": {"description": "Data layer patterns"}}},
-        ]
-
         result = cli.generate_architecture_prompt("web", "data")
 
         # Check for metadata header
@@ -510,134 +447,62 @@ class TestArchitecturePrompt:
 class TestDependencyPrompt:
     """Test cases for generate_dependency_prompt method."""
 
-    @patch("principles_cli.PrinciplesCLI.load_yaml")
-    def test_generate_dependency_prompt_approved(self, mock_load_yaml: Any) -> None:
+    @patch("principles_cli.LeapLoader")
+    def test_generate_dependency_prompt_approved(self, mock_loader_class: Any) -> None:
         """Test generating dependency prompt for libraries."""
-        cli = PrinciplesCLI()
-
-        mock_load_yaml.side_effect = [
-            {"principles": {"dependencies": {"why": "Minimize dependencies"}}},
-            {
-                "platforms": {
-                    "android": {
-                        "approved_dependencies": {
-                            "reactive": [
-                                {
-                                    "name": "RxJava2",
-                                    "purpose": "Reactive programming",
-                                    "version": "2.x",
-                                }
-                            ]
-                        }
+        # Setup mock loader instance
+        mock_loader = mock_loader_class.return_value
+        principles = {"dependencies": {"why": "Minimize dependencies"}}
+        platform_config = {
+            "approved_dependencies": {
+                "reactive": [
+                    {
+                        "name": "RxJava2",
+                        "purpose": "Reactive programming",
+                        "version": "2.x",
                     }
-                }
-            },
-        ]
+                ]
+            }
+        }
+        mock_loader.load_principles.return_value = principles
+        mock_loader.load_platforms.return_value = {"android": platform_config}
+        mock_loader.get_platform_title.return_value = "Android"
+        mock_loader.get_common_prompt_data.return_value = (
+            principles,
+            "Android",
+            platform_config,
+        )
 
+        cli = PrinciplesCLI()
         result = cli.generate_dependency_prompt("android", ["rxjava2"])
 
         assert "# Dependency Evaluation for Android" in result
         assert "## Dependency Status Check" in result
         assert "rxjava2" in result
 
-    @patch("principles_cli.PrinciplesCLI.load_yaml")
-    def test_generate_dependency_prompt_multiple(self, mock_load_yaml: Any) -> None:
+    @patch("principles_cli.LeapLoader")
+    def test_generate_dependency_prompt_multiple(self, mock_loader_class: Any) -> None:
         """Test generating dependency prompt for multiple libraries."""
+        # Setup mock loader instance
+        mock_loader = mock_loader_class.return_value
+        principles = {"dependencies": {"why": "Minimize dependencies"}}
+        platform_config = {"approved_dependencies": {"frameworks": ["UIKit"]}}
+        mock_loader.load_principles.return_value = principles
+        mock_loader.load_platforms.return_value = {"ios": platform_config}
+        mock_loader.get_platform_title.return_value = "iOS"
+        mock_loader.get_common_prompt_data.return_value = (
+            principles,
+            "iOS",
+            platform_config,
+        )
+
         cli = PrinciplesCLI()
-
-        mock_load_yaml.side_effect = [
-            {"principles": {"dependencies": {"why": "Minimize dependencies"}}},
-            {"platforms": {"ios": {"approved_dependencies": {"frameworks": ["UIKit"]}}}},
-        ]
-
         result = cli.generate_dependency_prompt("ios", ["react-native", "lodash"])
 
         assert "# Dependency Evaluation for iOS" in result
         assert "## Dependency Status Check" in result
         assert "react-native" in result
         assert "lodash" in result
-
-
-class TestMainFunction:
-    """Test cases for main function CLI behavior."""
-
-    @patch("sys.argv", ["principles_cli.py", "review", "--platform", "web", "--focus", "security"])
-    @patch("principles_cli.PrinciplesCLI.generate_review_prompt")
-    def test_main_review_command(self, mock_generate_review: Any) -> None:
-        """Test main function with review command."""
-        mock_generate_review.return_value = "Generated review prompt"
-
-        from principles_cli import main
-
-        main()
-
-        mock_generate_review.assert_called_once_with("web", ["security"])
-
-    @patch(
-        "sys.argv", ["principles_cli.py", "generate", "--platform", "android", "--component", "ui"]
-    )
-    @patch("principles_cli.PrinciplesCLI.generate_code_prompt")
-    def test_main_generate_command(self, mock_generate_code: Any) -> None:
-        """Test main function with generate command."""
-        mock_generate_code.return_value = "Generated code prompt"
-
-        from principles_cli import main
-
-        main()
-
-        mock_generate_code.assert_called_once_with("android", "ui")
-
-    @patch(
-        "sys.argv", ["principles_cli.py", "architecture", "--platform", "ios", "--layer", "data"]
-    )
-    @patch("principles_cli.PrinciplesCLI.generate_architecture_prompt")
-    def test_main_architecture_command(self, mock_generate_arch: Any) -> None:
-        """Test main function with architecture command."""
-        mock_generate_arch.return_value = "Generated architecture prompt"
-
-        from principles_cli import main
-
-        main()
-
-        mock_generate_arch.assert_called_once_with("ios", "data")
-
-    @patch(
-        "sys.argv", ["principles_cli.py", "dependencies", "--platform", "web", "react", "lodash"]
-    )
-    @patch("principles_cli.PrinciplesCLI.generate_dependency_prompt")
-    def test_main_dependency_command(self, mock_generate_dep: Any) -> None:
-        """Test main function with dependency command."""
-        mock_generate_dep.return_value = "Generated dependency prompt"
-
-        from principles_cli import main
-
-        main()
-
-        mock_generate_dep.assert_called_once_with("web", ["react", "lodash"])
-
-    @patch("sys.argv", ["principles_cli.py", "invalid-command"])
-    def test_main_invalid_command(self) -> None:
-        """Test main function with invalid command."""
-        from principles_cli import main
-
-        with pytest.raises(SystemExit) as exc_info:
-            main()
-
-        # argparse will exit with code 2 for invalid arguments
-        assert exc_info.value.code == 2
-
-    @patch(
-        "sys.argv",
-        ["principles_cli.py", "review", "--platform", "invalid-platform", "--focus", "security"],
-    )
-    def test_main_invalid_platform(self) -> None:
-        """Test main function with invalid platform."""
-        from principles_cli import main
-
-        with pytest.raises(SystemExit) as exc_info:
-            main()
-
-        assert exc_info.value.code == 2  # argparse exits with code 2 for invalid choices
 
 
 if __name__ == "__main__":

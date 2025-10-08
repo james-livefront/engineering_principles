@@ -88,17 +88,7 @@ class AIEvaluator(Protocol):
 
 @dataclass
 class EvaluationReport:
-    """
-    Evaluation metrics for prompt effectiveness.
-
-    Metrics Definitions:
-    - accuracy: Overall correctness (TP + TN) / Total
-    - precision: When we predict violation, how often right? TP / (TP + FP)
-    - recall: Of actual violations, how many caught? TP / (TP + FN)
-    - f1_score: Harmonic mean of precision/recall: 2 * (P*R) / (P+R)
-
-    See docs/evaluation-metrics.md for detailed explanations.
-    """
+    """Evaluation metrics. See docs/evaluation-metrics.md for details."""
 
     total_tests: int
     correct_predictions: int
@@ -190,7 +180,7 @@ class PromptEvaluator:
         ai_evaluator: AIEvaluator,
         principles: list[str] | None = None,
     ) -> EvaluationReport:
-        """Evaluate detection prompt against test cases with Smart Context Detection"""
+        """Evaluate detection prompt with Smart Context Detection"""
         all_results: list[TestResult] = []
         category_stats: dict[str, dict[str, float]] = {}
 
@@ -261,7 +251,6 @@ class PromptEvaluator:
         ai_evaluator: AIEvaluator,
         principles: list[str] | None = None,
         parallel: bool = True,
-        enhanced: bool = False,
     ) -> MultiConfigReport:
         """
         Evaluate multiple configurations and compare their performance.
@@ -288,7 +277,7 @@ class PromptEvaluator:
                 # Submit all evaluation tasks
                 future_to_config = {
                     executor.submit(
-                        self._evaluate_single_config, config, ai_evaluator, principles, enhanced
+                        self._evaluate_single_config, config, ai_evaluator, principles
                     ): config
                     for config in configs
                 }
@@ -305,9 +294,7 @@ class PromptEvaluator:
             # Sequential evaluation
             for config in configs:
                 try:
-                    result = self._evaluate_single_config(
-                        config, ai_evaluator, principles, enhanced
-                    )
+                    result = self._evaluate_single_config(config, ai_evaluator, principles)
                     config_results.append(result)
                 except Exception as e:
                     print(f"❌ Error evaluating {config.get('name', 'unknown')}: {e}")
@@ -336,7 +323,6 @@ class PromptEvaluator:
         config: dict[str, Any],
         ai_evaluator: AIEvaluator,
         principles: list[str] | None = None,
-        enhanced: bool = False,
     ) -> ConfigResult:
         """Evaluate a single configuration"""
         config_name = config.get("name", "unnamed")
@@ -355,13 +341,6 @@ class PromptEvaluator:
             raise ValueError(f"No prompt content for config '{config_name}'")
 
         print(f"  📊 Evaluating '{config_name}'...")
-
-        # Apply enhancement if requested
-        if enhanced:
-            if isinstance(ai_evaluator, APIEvaluator):
-                prompt_content = enhance_prompt_with_llm(prompt_content, ai_evaluator)
-            else:
-                print("  ⚠️ Enhancement skipped: evaluator type not supported")
 
         # Run the standard evaluation
         report = self.evaluate_detection_prompt(prompt_content, ai_evaluator, principles)
@@ -503,7 +482,7 @@ class PromptEvaluator:
     def _parse_detection_response(
         self, ai_response: str, test_case: dict[str, Any]
     ) -> dict[str, Any]:
-        """Parse AI response for violations using detection constants"""
+        """Parse response for violations using detection constants"""
         response_lower = ai_response.lower()
 
         found_indicators = sum(
@@ -522,19 +501,7 @@ class PromptEvaluator:
     def _calculate_evaluation_report(
         self, results: list[TestResult], category_stats: dict[str, dict[str, Any]]
     ) -> EvaluationReport:
-        """
-        Calculate evaluation metrics from test results.
-
-        Metrics calculated:
-        - Accuracy: (TP + TN) / Total - overall correctness
-        - Precision: TP / (TP + FP) - when we predict violation, how often right?
-        - Recall: TP / (TP + FN) - of actual violations, how many caught?
-        - F1: 2 * (P * R) / (P + R) - harmonic mean of precision/recall
-
-        High precision = fewer false alarms
-        High recall = fewer missed violations
-        See docs/evaluation-metrics.md for trade-off guidance.
-        """
+        """Calculate evaluation metrics. See docs/evaluation-metrics.md."""
         if not results:
             return EvaluationReport(0, 0, 0, 0, 0, 0, {}, [])
 
@@ -583,7 +550,7 @@ class PromptEvaluator:
 
 
 class APIEvaluator:
-    """API-based code evaluator implementing AIEvaluator protocol"""
+    """Code evaluator using API"""
 
     def __init__(self, provider: str, model: str, base_url: str) -> None:
         self.provider = provider
@@ -641,7 +608,7 @@ def load_config(config_path: str) -> dict[str, Any]:
 
 
 def mock_ai_evaluator(prompt: str) -> str:
-    """Mock AI evaluator function for testing"""
+    """Mock evaluator for testing"""
     # This would be replaced with actual AI API calls
     return (
         "I found several issues in this code including security "
@@ -721,95 +688,6 @@ def _write_multi_config_report(multi_report: MultiConfigReport, output_path: str
         json.dump(report_data, f, indent=2, default=str)
 
 
-def enhance_prompt_with_llm(
-    prompt: str, api_evaluator: APIEvaluator, show_diff: bool = False
-) -> str:
-    """Enhance a prompt with latest security/accessibility practices using LLM"""
-
-    # Check cache first
-    import hashlib
-
-    cache_dir = Path(".cache")
-    cache_dir.mkdir(exist_ok=True)
-
-    prompt_hash = hashlib.md5(prompt.encode()).hexdigest()
-    cache_file = cache_dir / f"enhanced_{prompt_hash}.txt"
-
-    if cache_file.exists():
-        print("Using cached enhanced prompt...")
-        with open(cache_file) as f:
-            enhanced = f.read()
-    else:
-        print("Enhancing prompt with latest practices using LLM...")
-
-        enhancement_prompt = f"""Expert in engineering standards across security and accessibility.
-
-Enhance this prompt with additional specific detection patterns while MAINTAINING ACCURACY.
-
-**ADD these enhancement layers (preserve ALL original content):**
-
-1. **Specific Modern Patterns** (2024/2025):
-   - Latest OWASP patterns for REAL vulnerabilities (not localhost/test code)
-   - Modern framework antipatterns (React 18+, TypeScript 5+)
-   - Current WCAG 2.2 VIOLATIONS (not compliant code)
-   - Contemporary testing gaps, not all missing tests
-
-2. **Precision-Focused Analysis**:
-   - AVOID FALSE POSITIVES - localhost/dev URLs are NOT violations
-   - Test files and examples are NOT production violations
-   - Good accessibility (proper ARIA, good contrast) should PASS
-   - Context matters - be specific about ACTUAL problems
-
-3. **Advanced Pattern Detection**:
-   - Multi-line vulnerabilities that span code blocks
-   - Semantic issues beyond regex patterns
-   - Compound violations that require understanding context
-
-4. **Real-Time Intelligence**:
-   - Current industry standards and best practices
-   - Tool-specific guidance (ESLint, TypeScript, testing frameworks)
-   - Platform evolution awareness (latest iOS, Android, Web APIs)
-
-**Focus on actionable, specific enhancements like:**
-- Exact regex patterns for latest vulnerabilities
-- Specific code examples with before/after
-- Framework-specific detection rules
-- Cross-cutting analysis techniques
-- Specific HTML attributes for accessibility
-- Concrete code smells with examples
-
-Original prompt:
-{prompt}
-
-Enhanced prompt (keep ALL original content and ADD specifics):"""
-
-        try:
-            enhanced = api_evaluator.evaluate_code(enhancement_prompt)
-
-            # Cache the enhanced prompt
-            with open(cache_file, "w") as f:
-                f.write(enhanced)
-
-        except Exception as e:
-            print(f"Enhancement failed: {e}")
-            print("Using original prompt...")
-            enhanced = prompt
-
-    if show_diff:
-        print("\n" + "=" * 50)
-        print("PROMPT ENHANCEMENT DIFF")
-        print("=" * 50)
-
-        # Simple diff - show first 500 chars of each
-        print("\nOriginal (first 500 chars):")
-        print(prompt[:500] + "...")
-        print("\nEnhanced (first 500 chars):")
-        print(enhanced[:500] + "...")
-        print("=" * 50 + "\n")
-
-    return enhanced
-
-
 def mock_ai_generator(prompt: str) -> str:
     """Mock AI generator function for testing"""
     # This would be replaced with actual AI API calls
@@ -822,7 +700,7 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="Examples:\n"
         "  %(prog)s --mode detection --platform web --focus accessibility\n"
-        "  %(prog)s --enhanced --platform android --focus security\n"
+        "  %(prog)s --platform android --focus security\n"
         "  %(prog)s --compare-prompts security.md accessibility.txt general.md\n"
         "  %(prog)s --compare-prompts *.md --prompt-names Security Accessibility "
         "General --output results.json",
@@ -832,7 +710,6 @@ def main() -> None:
     parser.add_argument("--principles", nargs="*", help="Principles to test")
     parser.add_argument("--platform", choices=["android", "ios", "web"])
     parser.add_argument("--focus", help="Comma-separated focus areas")
-    parser.add_argument("--enhanced", action="store_true", help="Enhance with LLM")
     parser.add_argument("--output", help="Output file for report")
     parser.add_argument("--prompt-file", help="Prompt file to test")
 
@@ -895,7 +772,7 @@ def main() -> None:
 
             # Run multi-prompt evaluation
             multi_report = evaluator.evaluate_multiple_configs(
-                configs, api_evaluator, effective_principles, args.parallel, args.enhanced
+                configs, api_evaluator, effective_principles, args.parallel
             )
 
             # Print clean comparison results
@@ -939,15 +816,9 @@ def main() -> None:
         print(f"Platform: {args.platform}")
     if effective_principles:
         print(f"Focus: {', '.join(effective_principles)}")
-    if args.enhanced:
-        print("Enhanced: Yes (using LLM to improve detection patterns)")
 
     if args.mode in ["detection", "both"]:
         api_evaluator = APIEvaluator("openai", "gpt-4o", "https://api.openai.com/v1")
-
-        # Apply enhancement if requested
-        if args.enhanced:
-            test_prompt = enhance_prompt_with_llm(test_prompt, api_evaluator)
 
         report = evaluator.evaluate_detection_prompt(
             test_prompt, api_evaluator, effective_principles

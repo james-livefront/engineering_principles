@@ -3,7 +3,7 @@
 LEAP MCP Server - Livefront Engineering Automated Principles
 
 MCP server that exposes LEAP engineering principles, detection patterns,
-enforcement specifications, and platform requirements for AI integration.
+enforcement specifications, and platform requirements.
 """
 
 import asyncio
@@ -27,15 +27,22 @@ from leap.filters import (
     map_focus_areas_to_enforcement_stages,
 )
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("leap-mcp-server")
-
-# Initialize LEAP loader
 loader = LeapLoader()
-
-# Create MCP server
 server = Server("leap-engineering-principles")
+
+__all__ = [
+    "get_principles_tool",
+    "get_detection_patterns_tool",
+    "get_generation_guidance_tool",
+    "get_platform_requirements_tool",
+    "get_enforcement_specs_tool",
+    "validate_dependency_tool",
+    "get_severity_guidance_tool",
+    "handle_call_tool",
+    "handle_list_tools",
+]
 
 
 @server.list_tools()
@@ -204,7 +211,6 @@ async def get_principles_tool(arguments: dict[str, Any]) -> list[TextContent]:
     if focus_areas:
         principles = filter_principles_by_focus(principles, focus_areas)
 
-    # Add platform context if specified
     result = {"principles": principles}
     if platform:
         result["platform"] = platform
@@ -230,14 +236,11 @@ async def get_generation_guidance_tool(arguments: dict[str, Any]) -> list[TextCo
     platform = arguments["platform"]
     component_type = arguments.get("component_type", "ui")
 
-    # Get platform requirements
     platforms = loader.load_platforms()
     platform_config = platforms.get(platform, {})
 
-    # Get component-specific principles
     component_principles = get_component_type_principles(component_type)
 
-    # Get philosophy for cultural context
     philosophy = loader.load_philosophy()
 
     result = {
@@ -271,7 +274,6 @@ async def get_enforcement_specs_tool(arguments: dict[str, Any]) -> list[TextCont
     ci_pipeline = enforcement.get("enforcement_tools", {}).get("ci_pipeline", {})
     stages = ci_pipeline.get("stages", [])
 
-    # Filter stages by focus areas if provided
     if focus_areas:
         relevant_stages = map_focus_areas_to_enforcement_stages(focus_areas)
         filtered_stages = [stage for stage in stages if stage.get("name", "") in relevant_stages]
@@ -294,14 +296,12 @@ async def validate_dependency_tool(arguments: dict[str, Any]) -> list[TextConten
 
     is_approved = any(dep.get("name") == package for dep in approved_deps if isinstance(dep, dict))
 
-    # Get alternatives if not approved
     alternatives = []
     if not is_approved:
-        # Simple logic to suggest alternatives based on purpose
         all_approved = [
             dep.get("name") for dep in approved_deps if isinstance(dep, dict) and dep.get("name")
         ]
-        alternatives = all_approved[:3]  # Show first 3 as examples
+        alternatives = all_approved[:3]
 
     result = {
         "package": package,
@@ -325,7 +325,6 @@ async def get_severity_guidance_tool(arguments: dict[str, Any]) -> list[TextCont
 
 async def main() -> None:
     """Main server function"""
-    # Initialize the server
     async with stdio_server() as (read_stream, write_stream):
         await server.run(
             read_stream,

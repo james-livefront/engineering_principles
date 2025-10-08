@@ -1,6 +1,6 @@
 # Contributing to LEAP
 
-Thank you for your interest in contributing to LEAP (Livefront Engineering Automated Principles)! This guide will help you extend the system effectively.
+Guide for extending LEAP (Livefront Engineering Automated Principles).
 
 ---
 
@@ -91,7 +91,7 @@ LEAP uses YAML files for all configuration to enable:
 
 ## Adding Detection Patterns
 
-Detection patterns are the core of LEAP's violation detection. Here's how to add effective patterns.
+How to add detection patterns for violation detection.
 
 ### Step 1: Choose the Right Principle Category
 
@@ -300,7 +300,7 @@ Create platform-specific test cases:
 
 ## Adding Evaluation Cases
 
-Strong evaluation cases improve LEAP's accuracy. Here's how to contribute test cases.
+How to contribute test cases.
 
 ### Test Case Structure
 
@@ -584,21 +584,3 @@ python eval_runner.py --category accessibility --platform web
 # 4. Verify improvement
 python eval_runner.py --category security --verbose
 ```
-
----
-
-## Questions and Support
-
-- **GitHub Issues**: For bugs and feature requests
-- **Discussions**: For questions and ideas
-- **Email**: <engineering@livefront.com> for private inquiries
-
----
-
-## License
-
-By contributing to LEAP, you agree that your contributions will be licensed under the same license as the project (MIT License).
-
----
-
-Thank you for helping make LEAP better! Your contributions help the entire community codify engineering excellence.

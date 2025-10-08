@@ -6,7 +6,7 @@ Modular system for encoding and enforcing engineering principles through AI-assi
 
 Experimental. Open questions remain:
 
-- **Codification**: How to translate principles into patterns LLMs can reliably apply?
+- **Codification**: How to translate human principles into patterns LLMs can reliably apply?
 - **Evaluation**: What constitutes a valid eval for engineering principles?
 - **Balance**: Hard-coded rules (YAML patterns) vs LLM analysis?
 
@@ -176,7 +176,7 @@ YAML regex patterns:
 
 LLM analysis attempts:
 - Latest standards: OWASP 2024, WCAG 2.2, framework-specific patterns
-- Sophisticated analysis: Cross-file dependencies, contextual severity
+- Cross-file dependencies and contextual severity
 - Advanced patterns: Multi-line detection, semantic code analysis
 
 Note: YAML patterns provide consistent detection. LLM enhancement experimental, may not improve accuracy.
@@ -709,12 +709,7 @@ Defaults:
 
 ### Understanding Results
 
-Metrics:
-- Accuracy: Percentage of correct detections
-- Precision: True positives / (True positives + False positives)
-- Recall: True positives / (True positives + False negatives)
-- F1 Score: Harmonic mean of precision and recall
-- Per-Category: Breakdown by principle type
+For detailed metric explanations and optimization strategies, see [docs/EVALUATION_METRICS.md](docs/EVALUATION_METRICS.md).
 
 Example report:
 
@@ -1158,7 +1153,7 @@ uv run python principles_cli.py review --platform web --focus security > securit
 # 2. Test effectiveness against your codebase
 uv run python eval_runner.py --prompt-file security_prompt.md --mode detection
 
-# 3. Use improved mode for cutting-edge coverage
+# 3. Use improved mode for latest coverage
 uv run python eval_runner.py --prompt-file security_prompt.md --enhanced --mode detection
 ```
 
@@ -1174,14 +1169,6 @@ uv run python eval_runner.py --mode generation --platform android --categories u
 # Export detailed reports
 uv run python eval_runner.py --mode detection --enhanced --output results.json
 ```
-
-## Performance Metrics
-
-- Base detection: 70%-85% accuracy
-- Enhanced mode: Experimental LLM intelligence
-- Platform coverage: Android, iOS, Web
-- Evaluation speed: ~30s base, ~60s enhanced per focus area
-- Pattern library: 100+ regex patterns
 
 ### Contributing
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate AI prompts for engineering standards"""
+"""Generate prompts for engineering standards"""
 
 import argparse
 import sys
@@ -328,7 +328,7 @@ After your review, the following automated checks will run:
         return "\n".join(output)
 
     def generate_code_prompt(self, platform: str, component_type: str) -> str:
-        """Generate code writing prompt with comprehensive guidance"""
+        """Generate code writing prompt"""
         principles, platform_title, platform_config = self.loader.get_common_prompt_data(platform)
         philosophy_data = self.loader.load_philosophy()
 
@@ -670,7 +670,7 @@ def main() -> None:
     cli = PrinciplesCLI()
 
     parser = argparse.ArgumentParser(
-        description="Generate AI prompts for engineering standards",
+        description="Generate prompts for engineering standards",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
@@ -679,10 +679,16 @@ def main() -> None:
     review_parser = subparsers.add_parser("review", help="Generate review prompt")
     review_parser.add_argument("--platform", choices=["android", "ios", "web"], required=True)
     review_parser.add_argument("--focus", default="security,accessibility,testing")
+    review_parser.add_argument(
+        "--enhanced", action="store_true", help="Enhance with LLM (requires OPENAI_API_KEY)"
+    )
 
     generate_parser = subparsers.add_parser("generate", help="Generate code prompt")
     generate_parser.add_argument("--platform", choices=["android", "ios", "web"], required=True)
     generate_parser.add_argument("--component", default="ui")
+    generate_parser.add_argument(
+        "--enhanced", action="store_true", help="Enhance with LLM (requires OPENAI_API_KEY)"
+    )
 
     architecture_parser = subparsers.add_parser("architecture", help="Generate architecture prompt")
     architecture_parser.add_argument("--platform", choices=["android", "ios", "web"], required=True)
@@ -713,6 +719,21 @@ def main() -> None:
         else:
             parser.print_help()
             return
+
+        # Apply enhancement if requested
+        if hasattr(args, "enhanced") and args.enhanced:
+            from leap.prompt_enhancer import enhance_prompt_with_llm, get_openai_evaluator
+
+            evaluator = get_openai_evaluator()
+            if evaluator is not None:
+                prompt = enhance_prompt_with_llm(prompt, evaluator)  # type: ignore[arg-type]
+            else:
+                print(
+                    "⚠️ Enhancement skipped: OPENAI_API_KEY not set or openai package not installed",
+                    file=sys.stderr,
+                )
+                print("   Set API key: export OPENAI_API_KEY='sk-...'", file=sys.stderr)
+                print("   Install package: uv add openai", file=sys.stderr)
 
         print(prompt)
 
