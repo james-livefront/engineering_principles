@@ -2,30 +2,28 @@
 
 import hashlib
 import os
+import sys
 from pathlib import Path
 from typing import Protocol
 
 
-class APIEvaluator(Protocol):
-    """Protocol for AI evaluators that can enhance prompts"""
+class LLMClient(Protocol):
+    """Protocol for LLM clients that can enhance prompts"""
 
-    def evaluate_code(self, prompt: str) -> str: ...
+    def generate(self, prompt: str) -> str: ...
 
 
-def enhance_prompt_with_llm(
-    prompt: str, api_evaluator: APIEvaluator, show_diff: bool = False
-) -> str:
+def enhance_prompt_with_llm(prompt: str, llm_client: LLMClient, show_diff: bool = False) -> str:
     """Enhance prompt with latest security/accessibility practices using LLM
 
     Args:
         prompt: Base prompt to enhance
-        api_evaluator: API client that implements evaluate_code method
+        llm_client: LLM client that implements generate method
         show_diff: Whether to show difference between original and enhanced
 
     Returns:
         Enhanced prompt with additional patterns and practices
     """
-    # Check cache first
     cache_dir = Path(".cache")
     cache_dir.mkdir(exist_ok=True)
 
@@ -33,65 +31,74 @@ def enhance_prompt_with_llm(
     cache_file = cache_dir / f"enhanced_{prompt_hash}.txt"
 
     if cache_file.exists():
-        print("✓ Using cached enhanced prompt")
+        print("✓ Using cached enhanced prompt", file=sys.stderr)
         with open(cache_file) as f:
             enhanced = f.read()
     else:
-        print("🔄 Enhancing prompt with latest practices using LLM...")
+        print("Enhancing prompt with latest practices using LLM...", file=sys.stderr)
 
-        enhancement_prompt = f"""Expert in engineering standards across security and accessibility.
+        # Request ONLY additional content from LLM (not full prompt replacement)
+        enhancement_request = f"""You are an expert in engineering standards across \
+security and accessibility.
 
-Enhance this prompt with additional specific detection patterns while MAINTAINING ACCURACY.
+Generate ADDITIONAL detection patterns to complement the existing prompt below.
+Output ONLY the new patterns you want to add - do NOT rewrite or repeat the original prompt.
 
-**ADD these enhancement layers (preserve ALL original content):**
+The additional patterns should include:
 
-1. **Specific Modern Patterns**:
-   - Latest OWASP patterns for REAL vulnerabilities (not localhost/test code)
-   - Modern framework antipatterns (React, Angular, Vue, Svelte)
-   - Current WCAG 2.2 VIOLATIONS (not compliant code)
-   - Contemporary testing gaps, not all missing tests
+1. **Latest OWASP Patterns** (2023-2024):
+   - Specific regex patterns for recent vulnerabilities
+   - Real vulnerability patterns (not localhost/test code)
 
-2. **Precision-Focused Analysis**:
-   - AVOID FALSE POSITIVES - localhost/dev URLs are NOT violations
-   - Test files and examples are NOT production violations
-   - Good accessibility (proper ARIA, good contrast) should PASS
-   - Context matters - be specific about ACTUAL problems
+2. **Modern Framework Antipatterns**:
+   - React 18+, Angular 15+, Vue 3+, Svelte 4+
+   - Specific code examples with detection patterns
 
-3. **Advanced Pattern Detection**:
-   - Multi-line vulnerabilities that span code blocks
-   - Semantic issues beyond regex patterns
-   - Compound violations that require understanding context
+3. **WCAG 2.2 Violations** (2023):
+   - Latest accessibility requirements
+   - Specific HTML/ARIA patterns that violate standards
 
-4. **Real-Time Intelligence**:
-   - Current industry standards and best practices
-   - Tool-specific guidance (ESLint, TypeScript, testing frameworks)
-   - Platform evolution awareness (latest iOS, Android, Web APIs)
+4. **Advanced Detection Techniques**:
+   - Multi-line vulnerability patterns
+   - Semantic issues beyond simple regex
+   - Context-aware detection patterns
 
-**Focus on actionable, specific enhancements like:**
-- Exact regex patterns for latest vulnerabilities
-- Specific code examples with before/after
-- Framework-specific detection rules
-- Cross-cutting analysis techniques
-- Specific HTML attributes for accessibility
-- Concrete code smells with examples
+5. **False Positive Prevention**:
+   - Explicit patterns to avoid flagging localhost/dev URLs
+   - How to distinguish test files from production code
+   - Context-based exception handling
 
-Original prompt:
+Format your output as additional detection rules that can be appended to the existing prompt.
+Be specific with regex patterns and code examples.
+
+Original prompt to complement:
+---
 {prompt}
+---
 
-Enhanced prompt (keep ALL original content and ADD specifics):"""
+Generate ONLY additional patterns (do not repeat the original prompt):"""
 
         try:
-            enhanced = api_evaluator.evaluate_code(enhancement_prompt)
+            additional_content = llm_client.generate(enhancement_request)
+
+            # Programmatically append LLM content to original prompt
+            enhanced = f"""{prompt}
+
+---
+
+## Enhanced Patterns (LLM-Generated)
+
+{additional_content}"""
 
             # Cache the enhanced prompt
             with open(cache_file, "w") as f:
                 f.write(enhanced)
 
-            print("✓ Enhancement complete")
+            print("✓ Enhancement complete (original + LLM additions)", file=sys.stderr)
 
         except Exception as e:
-            print(f"⚠️ Enhancement failed: {e}")
-            print("→ Using original prompt")
+            print(f"Enhancement failed: {e}", file=sys.stderr)
+            print("→ Using original prompt", file=sys.stderr)
             enhanced = prompt
 
     if show_diff:
@@ -110,11 +117,11 @@ Enhanced prompt (keep ALL original content and ADD specifics):"""
     return enhanced
 
 
-def get_openai_evaluator() -> APIEvaluator | None:
-    """Get OpenAI API evaluator if available
+def get_openai_client() -> LLMClient | None:
+    """Get OpenAI LLM client if available
 
     Returns:
-        APIEvaluator instance or None if OpenAI not available
+        LLMClient instance or None if OpenAI not available
     """
     try:
         from openai import OpenAI
@@ -123,11 +130,11 @@ def get_openai_evaluator() -> APIEvaluator | None:
         if not api_key:
             return None
 
-        class OpenAIEvaluator:
+        class OpenAIClient:
             def __init__(self) -> None:
                 self.client = OpenAI(api_key=api_key)
 
-            def evaluate_code(self, prompt: str) -> str:
+            def generate(self, prompt: str) -> str:
                 response = self.client.chat.completions.create(
                     model="gpt-4o",
                     messages=[{"role": "user", "content": prompt}],
@@ -135,7 +142,7 @@ def get_openai_evaluator() -> APIEvaluator | None:
                 )
                 return response.choices[0].message.content or ""
 
-        return OpenAIEvaluator()
+        return OpenAIClient()
 
     except ImportError:
         return None
