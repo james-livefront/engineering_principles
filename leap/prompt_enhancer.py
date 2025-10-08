@@ -110,7 +110,7 @@ Enhanced prompt (keep ALL original content and ADD specifics):"""
     return enhanced
 
 
-def get_openai_evaluator() -> object | None:
+def get_openai_evaluator() -> APIEvaluator | None:
     """Get OpenAI API evaluator if available
 
     Returns:
