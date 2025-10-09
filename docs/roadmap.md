@@ -17,13 +17,13 @@
 - [x] pipx Installation - Global commands (leap-mcp-server, leap, leap-eval)
 - [x] Testing - 97% MCP server coverage (40/40 tests passing)
 - [x] Setup - One-command installation via install.sh
-- [x] Code Quality - De-AIification and duplication cleanup (15 improvements across 5 files)
 - [x] Documentation - README, CLI Reference, Evaluation Metrics, Contributing Guide (2,335+ lines)
 - [x] Detection Rules - Security, Accessibility, Testing, Architecture patterns with platform filtering
 
 ## TODO
 
 ### Missing Detection Rules Integration
+
 - [ ] Dependencies - Enhanced approval workflow integration
 - [ ] Performance - Bundle size, optimization opportunities
 
@@ -33,17 +33,6 @@
 - [x] **`code_reviews`** - Code review principles integrated into review prompts
 - [ ] **`preflight_checklist`** - Generate release readiness checklists and QA prompts
 - [ ] **`cultural_expectations`** - Create onboarding and team culture prompts
-
-### Code Quality & Maintenance
-
-- [x] **De-AIification** - Removed AI marketing language from codebase
-  - [x] Removed "comprehensive", "AI-powered", "sophisticated", "cutting-edge" buzzwords
-  - [x] Simplified verbose docstrings with links to documentation
-  - [x] Cleaned up 4 files: README.md, principles_cli.py, eval_runner.py, leap_mcp_server.py
-- [x] **Duplication Cleanup** - Fixed contradictions and redundancy
-  - [x] Removed duplicate Performance Metrics section in README
-  - [x] Deduplicated evaluation metrics documentation
-  - [x] Consolidated installation instructions
 
 ### Evaluation Improvements
 
@@ -93,7 +82,6 @@
 - [ ] CI bot integration (GitHub Actions, Jenkins)
 - [ ] Pre-commit hooks automation
 - [ ] Slack/Teams notifications for violations
-
 
 ### Community & Extensibility
 
