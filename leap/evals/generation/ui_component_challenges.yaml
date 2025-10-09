@@ -176,7 +176,7 @@ evaluation_criteria:
       - "Keyboard navigation works completely"
       - "Screen reader announcements are appropriate"
       - "Touch targets meet minimum size requirements"
-  
+
   code_quality:
     weight: 0.25
     checks:
@@ -185,7 +185,7 @@ evaluation_criteria:
       - "Follows platform conventions"
       - "Proper error handling"
       - "No hardcoded strings"
-  
+
   testing:
     weight: 0.2
     checks:
@@ -193,7 +193,7 @@ evaluation_criteria:
       - "Accessibility tests included"
       - "Edge cases covered"
       - "Integration tests for complex flows"
-  
+
   architecture:
     weight: 0.15
     checks:
@@ -201,7 +201,7 @@ evaluation_criteria:
       - "Proper separation of concerns"
       - "No tight coupling"
       - "Reusable and composable"
-  
+
   security:
     weight: 0.1
     checks:

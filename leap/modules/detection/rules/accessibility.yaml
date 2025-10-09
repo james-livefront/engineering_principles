@@ -5,52 +5,52 @@ rules:
   screen_reader_support:
     description: "Detect missing screen reader support"
     severity: "critical"
-    
+
     android_patterns:
       missing_content_description:
         regex: '<(?:ImageView|ImageButton)(?![^>]*contentDescription)[^>]*/?>'
         message: "ImageView/ImageButton missing contentDescription"
         file_pattern: "*.xml"
-        
+
       missing_important_for_accessibility:
         regex: '<(?:View|LinearLayout|RelativeLayout)(?![^>]*importantForAccessibility)[^>]*>'
         message: "Container view should specify importantForAccessibility"
         confidence: "medium"
         file_pattern: "*.xml"
-      
+
       hardcoded_content_description:
         regex: 'contentDescription="[^"@]+"'
         message: "ContentDescription should use string resource"
         severity: "required"
-    
+
     ios_patterns:
       missing_accessibility_label:
         regex: 'UIImageView\(\)(?![^}]*\.accessibilityLabel)'
         message: "UIImageView missing accessibilityLabel"
-        
+
       missing_accessibility_hint:
         regex: 'UIButton\(\)(?![^}]*\.accessibility(?:Label|Hint))'
         message: "UIButton missing accessibility properties"
-        
+
       inaccessible_custom_control:
         regex: 'class\s+\w+:\s*UIControl(?![^}]*isAccessibilityElement\s*=\s*true)'
         message: "Custom control not marked as accessible"
-    
+
     web_patterns:
       missing_alt_text:
         regex: '<img(?![^>]*\salt=)[^>]*>'
         message: "Image missing alt attribute"
         severity: "critical"
-        
+
       empty_alt_text:
         regex: '<img[^>]*\salt=""[^>]*>'
         message: "Empty alt text - use alt=' ' for decorative images"
         confidence: "medium"
-        
+
       missing_aria_label:
         regex: '<(?:button|a)(?![^>]*(?:aria-label|aria-labelledby))[^>]*>(?:<(?:i|span)[^>]*class="[^"]*icon[^"]*"[^>]*>)?</(?:button|a)>'
         message: "Interactive element with icon missing aria-label"
-        
+
       form_without_labels:
         regex: '<input(?![^>]*(?:aria-label|aria-labelledby))[^>]*(?:type="(?:text|email|password|tel|number)")[^>]*>'
         message: "Form input missing associated label"
@@ -58,32 +58,32 @@ rules:
   touch_target_sizes:
     description: "Detect insufficient touch target sizes"
     severity: "blocking"
-    
+
     android_patterns:
       small_touch_target:
         regex: 'android:(?:layout_)?(?:width|height)="(\d+)dp"'
         message: "Touch target smaller than 48dp"
         condition: "captured_value < 48"
         applies_to: ["Button", "ImageButton", "CheckBox", "RadioButton", "Switch"]
-        
+
       small_clickable_area:
         regex: 'android:minHeight="(\d+)dp"'
         message: "Clickable area height smaller than 48dp"
         condition: "captured_value < 48"
         when_present: 'android:clickable="true"'
-    
+
     ios_patterns:
       insufficient_height:
         regex: '\.heightAnchor\.constraint\(equalToConstant:\s*(\d+)'
         message: "Touch target height smaller than 44pt"
         condition: "captured_value < 44"
         context: ["UIButton", "UIControl"]
-        
+
       insufficient_frame:
         regex: '\.frame\([^)]*height:\s*(\d+)'
         message: "Touch target height smaller than 44pt"
         condition: "captured_value < 44"
-    
+
     web_patterns:
       small_button:
         regex: '(?:height|min-height):\s*(\d+)(?:px|rem)'
@@ -95,18 +95,18 @@ rules:
   color_contrast:
     description: "Detect potential color contrast issues"
     severity: "blocking"
-    
+
     patterns:
       light_gray_text:
         regex: 'color:\s*#[A-Fa-f0-9]{6}'
         message: "Verify color contrast ratio meets WCAG standards"
         warning: "Light colors on white background may fail contrast requirements"
-        
+
       low_opacity_text:
         regex: 'opacity:\s*(0\.[0-6]\d*)'
         message: "Low opacity text may fail contrast requirements"
         condition: "captured_value < 0.7"
-        
+
       android_hint_color:
         regex: 'android:textColorHint="#[A-Fa-f0-9]{6}"'
         message: "Verify hint text color has sufficient contrast"
@@ -114,34 +114,34 @@ rules:
   dynamic_font_support:
     description: "Detect missing dynamic font support"
     severity: "required"
-    
+
     android_patterns:
       fixed_text_size:
         regex: 'android:textSize="(\d+)(?:sp|dp)"'
         message: "Use sp for text sizes to support font scaling"
         when_unit: "dp"
-        
+
       hardcoded_dimensions:
         regex: 'android:(?:layout_)?height="(\d+)dp"'
         message: "Fixed height may clip scaled text"
         context: ["TextView", "Button", "EditText"]
-    
+
     ios_patterns:
       fixed_font_size:
         regex: '\.font\(\.system\(ofSize:\s*\d+\)\)'
         message: "Use dynamic type instead of fixed font sizes"
         suggestion: ".font(.preferredFont(forTextStyle: .body))"
-        
+
       missing_adjusts_font:
         regex: 'UILabel\(\)(?![^}]*adjustsFontForContentSizeCategory\s*=\s*true)'
         message: "Label should adjust font for content size category"
-    
+
     web_patterns:
       pixel_font_size:
         regex: 'font-size:\s*\d+px'
         message: "Use rem or em for font sizes"
         severity: "required"
-        
+
       fixed_line_height:
         regex: 'line-height:\s*\d+px'
         message: "Use relative units for line height"
@@ -150,21 +150,21 @@ rules:
     description: "Detect non-semantic HTML"
     severity: "required"
     applies_to: ["web"]
-    
+
     patterns:
       div_as_button:
         regex: '<div[^>]*(?:onClick|role="button")[^>]*>'
         message: "Use <button> instead of div with onClick"
-        
+
       missing_main_landmark:
         regex: '<body>(?!.*<main)'
         message: "Page should have <main> landmark"
         file_pattern: ["*.html", "*.jsx", "*.tsx"]
-        
+
       empty_heading:
         regex: '<h[1-6][^>]*>\s*</h[1-6]>'
         message: "Empty heading tag"
-        
+
       skip_heading_level:
         regex: '<h([1-6])[^>]*>[^<]*</h\1>(?!.*<h\d)|<h([2-6])[^>]*>(?!.*<h[1-\2])'
         message: "Heading levels should not skip"
@@ -173,18 +173,18 @@ rules:
   keyboard_navigation:
     description: "Detect keyboard navigation issues"
     severity: "required"
-    
+
     web_patterns:
       missing_focus_visible:
         regex: ':focus\s*{[^}]*outline:\s*(?:none|0)'
         message: "Removing focus outline without alternative"
         suggestion: "Provide visible focus indicator"
-        
+
       positive_tabindex:
         regex: 'tabindex="[1-9]\d*"'
         message: "Avoid positive tabindex values"
         suggestion: "Use tabindex='0' or '-1'"
-        
+
       inaccessible_interactive:
         regex: '<(?:div|span)[^>]*(?:onClick|onKeyPress)[^>]*(?!tabindex)[^>]*>'
         message: "Interactive element needs tabindex"
@@ -192,17 +192,17 @@ rules:
   form_accessibility:
     description: "Detect form accessibility issues"
     severity: "required"
-    
+
     patterns:
       missing_label_association:
         regex: '<label(?![^>]*for=)[^>]*>[^<]*</label>'
         message: "Label missing 'for' attribute"
-        
+
       placeholder_as_label:
         regex: '<input[^>]*placeholder="[^"]*"(?![^>]*(?:aria-label|aria-labelledby))[^>]*>'
         message: "Don't use placeholder as the only label"
         confidence: "medium"
-        
+
       missing_error_association:
         regex: '<(?:input|select|textarea)[^>]*(?:class="[^"]*error[^"]*"|aria-invalid="true")(?![^>]*aria-describedby)[^>]*>'
         message: "Error message not associated with input"
@@ -210,16 +210,16 @@ rules:
   aria_usage:
     description: "Detect ARIA misuse"
     severity: "required"
-    
+
     patterns:
       redundant_aria:
         regex: '<button[^>]*role="button"'
         message: "Redundant role on semantic element"
-        
+
       invalid_aria_value:
         regex: 'aria-hidden="(?!true|false)"'
         message: "Invalid aria-hidden value"
-        
+
       missing_aria_required:
         regex: '<div[^>]*role="(?:button|link)"(?![^>]*aria-label)[^>]*>'
         message: "Custom role needs accessible name"
@@ -230,11 +230,11 @@ detection_helpers:
       normal_text: 4.5
       large_text: 3.0
       non_text: 3.0
-    
+
     touch_targets:
       minimum: "44x44"
       preferred: "48x48"
-    
+
     focus_indicators:
       minimum_contrast: 3.0
       minimum_size: "2px"
@@ -243,10 +243,10 @@ detection_helpers:
     android:
       tools_namespace: "xmlns:tools"
       suppress_attribute: "tools:ignore"
-      
+
     ios:
       accessibility_frameworks: ["UIAccessibility", "VoiceOver"]
-      
+
     web:
       testing_tools: ["axe", "WAVE", "Lighthouse"]
 
@@ -258,13 +258,13 @@ reporting:
       **File**: {file_path}
       **Line**: {line_number}
       **Issue**: {message}
-      
+
       **WCAG Criterion**: {wcag_criterion}
-      
+
       {suggestion}
-      
+
       **Impact**: {user_impact}
-    
+
   summary:
     template: "Found {total} accessibility issues affecting {affected_users}"
     affected_users:

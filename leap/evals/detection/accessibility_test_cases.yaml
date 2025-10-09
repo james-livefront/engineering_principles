@@ -15,7 +15,7 @@ test_cases:
       message_contains: "Missing alt text"
       suggestion_contains: "Add descriptive alt attribute"
 
-  - id: "A11Y-002" 
+  - id: "A11Y-002"
     name: "Button without accessible label"
     category: "missing_labels"
     code: |
@@ -109,10 +109,10 @@ test_cases:
     name: "Form input without label"
     category: "form_labels"
     code: |
-      <input 
-        type="email" 
+      <input
+        type="email"
         placeholder="Enter your email"
-        className="email-input" 
+        className="email-input"
       />
     language: "tsx"
     expected:
@@ -142,8 +142,8 @@ test_cases:
     name: "Non-semantic HTML for interactive element"
     category: "semantic_html"
     code: |
-      <div 
-        className="button-style" 
+      <div
+        className="button-style"
         onClick={handleSubmit}
       >
         Submit Form

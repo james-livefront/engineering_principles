@@ -47,7 +47,7 @@ test_cases:
           if (!/[a-z]/.test(password)) errors.push('Missing lowercase letter');
           if (!/\d/.test(password)) errors.push('Missing number');
           if (!/[!@#$%^&*]/.test(password)) errors.push('Missing special character');
-          
+
           return {
             valid: errors.length === 0,
             errors
@@ -58,7 +58,7 @@ test_cases:
           const today = new Date();
           const age = today.getFullYear() - birthDate.getFullYear();
           const monthDiff = today.getMonth() - birthDate.getMonth();
-          
+
           if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
             return age - 1 >= 13;
           }
@@ -93,12 +93,12 @@ test_cases:
     code: |
       test('user data loads correctly', async () => {
         const promise = loadUserData(userId);
-        
+
         // Wait a bit for data to load
         setTimeout(() => {
           expect(mockApi.getUserData).toHaveBeenCalledWith(userId);
         }, 100);
-        
+
         const result = await promise;
         expect(result.name).toBe('John Doe');
       });
@@ -117,7 +117,7 @@ test_cases:
     code: |
       test('component renders with correct internal state', () => {
         const component = render(<ShoppingCart items={mockItems} />);
-        
+
         // Testing internal implementation
         expect(component.instance().state.isLoading).toBe(false);
         expect(component.instance().calculateSubtotal()).toBe(100);
@@ -138,13 +138,13 @@ test_cases:
     code: |
       test('displays error message when email is invalid', async () => {
         render(<LoginForm onSubmit={mockSubmit} />);
-        
+
         const emailInput = screen.getByLabelText(/email/i);
         const submitButton = screen.getByRole('button', { name: /sign in/i });
-        
+
         await user.type(emailInput, 'invalid-email');
         await user.click(submitButton);
-        
+
         expect(screen.getByText(/please enter a valid email/i)).toBeInTheDocument();
         expect(mockSubmit).not.toHaveBeenCalled();
       });
@@ -161,13 +161,13 @@ test_cases:
       class UserProfileViewModel(
         private val userRepository: UserRepository
       ) : ViewModel() {
-        
+
         private val _userProfile = MutableLiveData<UserProfile>()
         val userProfile: LiveData<UserProfile> = _userProfile
-        
+
         private val _loading = MutableLiveData<Boolean>()
         val loading: LiveData<Boolean> = _loading
-        
+
         fun loadUserProfile(userId: String) {
           _loading.value = true
           viewModelScope.launch {
@@ -181,7 +181,7 @@ test_cases:
             }
           }
         }
-        
+
         fun updateProfile(profile: UserProfile) {
           viewModelScope.launch {
             userRepository.updateUserProfile(profile)
@@ -203,7 +203,7 @@ test_cases:
     code: |
       test('user service handles various scenarios', () => {
         const service = new UserService();
-        
+
         // Testing multiple different behaviors in one test
         expect(service.validateEmail('test@example.com')).toBe(true);
         expect(service.validatePassword('weak')).toBe(false);
@@ -224,12 +224,12 @@ test_cases:
     category: "test_isolation"
     code: |
       let globalUser;
-      
+
       test('creates user successfully', () => {
         globalUser = createUser({ name: 'John', email: 'john@example.com' });
         expect(globalUser.id).toBeDefined();
       });
-      
+
       test('user has correct properties', () => {
         expect(globalUser.name).toBe('John');
         expect(globalUser.email).toBe('john@example.com');

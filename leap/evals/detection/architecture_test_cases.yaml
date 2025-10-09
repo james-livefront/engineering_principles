@@ -8,21 +8,21 @@ test_cases:
     code: |
       function UserProfile({ user }) {
         const [userData, setUserData] = useState(user);
-        
+
         const handleEdit = () => {
           // View component directly modifying state
           setUserData({
             ...userData,
             lastModified: new Date()
           });
-          
+
           // And making API calls
           fetch('/api/users', {
             method: 'POST',
             body: JSON.stringify(userData)
           });
         };
-        
+
         return (
           <div>
             <h1>{userData.name}</h1>
@@ -44,25 +44,25 @@ test_cases:
     code: |
       function CheckoutForm({ cartItems }) {
         const [total, setTotal] = useState(0);
-        
+
         const calculateTotal = () => {
           let subtotal = 0;
           cartItems.forEach(item => {
             subtotal += item.price * item.quantity;
-            
+
             // Business logic in UI component
             if (item.category === 'electronics') {
               subtotal += item.price * 0.08; // Tax
             }
-            
+
             if (subtotal > 100) {
               subtotal *= 0.95; // Discount
             }
           });
-          
+
           setTotal(subtotal);
         };
-        
+
         return (
           <form>
             <p>Total: ${total}</p>
@@ -83,35 +83,35 @@ test_cases:
     category: "separation_of_concerns"
     code: |
       class PaymentActivity : AppCompatActivity() {
-        
+
         override fun onCreate(savedInstanceState: Bundle?) {
           super.onCreate(savedInstanceState)
           setContentView(R.layout.activity_payment)
-          
+
           val payButton = findViewById<Button>(R.id.pay_button)
           payButton.setOnClickListener {
             processPayment()
           }
         }
-        
+
         private fun processPayment() {
           val amount = findViewById<EditText>(R.id.amount_input).text.toString().toDouble()
           val cardNumber = findViewById<EditText>(R.id.card_input).text.toString()
-          
+
           // Business logic in Activity
           if (amount < 0) {
             showError("Invalid amount")
             return
           }
-          
+
           if (!isValidCard(cardNumber)) {
             showError("Invalid card number")
             return
           }
-          
+
           val fee = calculateProcessingFee(amount)
           val total = amount + fee
-          
+
           // Network call directly in Activity
           val request = PaymentRequest(cardNumber, total)
           PaymentService.processPayment(request) { result ->
@@ -122,12 +122,12 @@ test_cases:
             }
           }
         }
-        
+
         private fun isValidCard(cardNumber: String): Boolean {
           // Luhn algorithm implementation in Activity
           return cardNumber.length == 16 && cardNumber.all { it.isDigit() }
         }
-        
+
         private fun calculateProcessingFee(amount: Double): Double {
           return when {
             amount < 10 -> 0.50
@@ -152,16 +152,16 @@ test_cases:
         private val smsService = SMSService()
         private val pushService = PushNotificationService()
         private val auditLogger = DatabaseAuditLogger()
-        
+
         fun sendWelcomeEmail(user: User) {
           val emailContent = buildWelcomeEmail(user)
           sendEmail(user.email, emailContent)
-          
+
           // Directly calling other services
           smsService.sendWelcomeSMS(user.phoneNumber)
           pushService.sendWelcomePush(user.deviceId, "Welcome!")
           auditLogger.logEmailSent(user.id, "welcome")
-          
+
           // Directly accessing database
           val preferences = UserPreferencesDatabase.getUserPreferences(user.id)
           if (preferences.marketingEmails) {
@@ -186,14 +186,14 @@ test_cases:
         fun loadUser(userId: String)
         fun updateUser(user: User)
       }
-      
+
       class UserViewModel(
         private val userRepository: UserRepository
       ) : ViewModel(), UserActions {
-        
+
         private val _userState = MutableStateFlow<UserState>(UserState.Loading)
         val userState: StateFlow<UserState> = _userState.asStateFlow()
-        
+
         override fun loadUser(userId: String) {
           viewModelScope.launch {
             _userState.value = UserState.Loading
@@ -205,7 +205,7 @@ test_cases:
             }
           }
         }
-        
+
         override fun updateUser(user: User) {
           viewModelScope.launch {
             try {
@@ -217,18 +217,18 @@ test_cases:
           }
         }
       }
-      
+
       @Composable
       fun UserScreen(
         viewModel: UserViewModel,
         userId: String
       ) {
         val userState by viewModel.userState.collectAsState()
-        
+
         LaunchedEffect(userId) {
           viewModel.loadUser(userId)
         }
-        
+
         when (userState) {
           is UserState.Loading -> LoadingIndicator()
           is UserState.Success -> UserContent(
@@ -251,18 +251,18 @@ test_cases:
         const [products, setProducts] = useState([]);
         const [loading, setLoading] = useState(false);
         const [sortBy, setSortBy] = useState('name');
-        
+
         useEffect(() => {
           fetchProducts();
         }, [categoryId]);
-        
+
         const fetchProducts = async () => {
           setLoading(true);
           try {
             // API call in component
             const response = await fetch(`/api/products?category=${categoryId}`);
             const data = await response.json();
-            
+
             // Business logic in component
             const processedData = data.map(product => ({
               ...product,
@@ -270,7 +270,7 @@ test_cases:
               inStock: product.inventory > 0,
               priority: product.featured ? 1 : 2
             }));
-            
+
             setProducts(processedData);
           } catch (error) {
             console.error('Failed to fetch products', error);
@@ -278,10 +278,10 @@ test_cases:
             setLoading(false);
           }
         };
-        
+
         const handleSort = (field) => {
           setSortBy(field);
-          
+
           // Business logic in component
           const sorted = [...products].sort((a, b) => {
             if (field === 'price') {
@@ -289,10 +289,10 @@ test_cases:
             }
             return a[field].localeCompare(b[field]);
           });
-          
+
           setProducts(sorted);
         };
-        
+
         return (
           <div>
             <select onChange={(e) => handleSort(e.target.value)}>
@@ -327,32 +327,32 @@ test_cases:
         @IBOutlet weak var nameLabel: UILabel!
         @IBOutlet weak var emailLabel: UILabel!
         @IBOutlet weak var editButton: UIButton!
-        
+
         private let viewModel: ProfileViewModel
-        
+
         init(viewModel: ProfileViewModel) {
           self.viewModel = viewModel
           super.init(nibName: nil, bundle: nil)
         }
-        
+
         override func viewDidLoad() {
           super.viewDidLoad()
           setupBindings()
           viewModel.loadProfile()
         }
-        
+
         private func setupBindings() {
           // View only binds to ViewModel state
           viewModel.profile.observe(on: self) { [weak self] profile in
             self?.nameLabel.text = profile?.name
             self?.emailLabel.text = profile?.email
           }
-          
+
           viewModel.isLoading.observe(on: self) { [weak self] isLoading in
             self?.editButton.isEnabled = !isLoading
           }
         }
-        
+
         @IBAction func editButtonTapped(_ sender: UIButton) {
           // View only sends actions to ViewModel
           viewModel.editProfile()
