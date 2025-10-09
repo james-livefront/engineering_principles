@@ -14,7 +14,7 @@
 - [x] Documentation and examples
 - [x] Evaluation metrics documentation (accuracy, precision, recall, F1 score)
 - [x] MCP Server Integration - Real-time agent integration with Claude Desktop/Code
-- [x] pipx Installation - Global commands (leap-mcp-server, leap-review, leap-eval)
+- [x] pipx Installation - Global commands (leap-mcp-server, leap, leap-eval)
 - [x] Testing - 97% MCP server coverage (40/40 tests passing)
 - [x] Setup - One-command installation via install.sh
 - [x] Code Quality - De-AIification and duplication cleanup (15 improvements across 5 files)

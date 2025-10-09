@@ -152,6 +152,7 @@ graph TB
 ### Data Sources
 
 All tools share the same YAML-based principle definitions:
+
 - `android.yaml`: Android platform principles
 - `ios.yaml`: iOS platform principles
 - `web.yaml`: Web platform principles

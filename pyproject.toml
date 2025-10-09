@@ -12,7 +12,7 @@ dependencies = [
 
 [project.scripts]
 leap-mcp-server = "leap_mcp_server:main_cli"
-leap-review = "principles_cli:main"
+leap = "principles_cli:main"
 leap-eval = "eval_runner:main"
 
 [build-system]
@@ -24,7 +24,10 @@ py-modules = ["leap_mcp_server", "principles_cli", "eval_runner"]
 include-package-data = true
 
 [tool.setuptools.packages.find]
-include = ["leap*"]
+include = ["leap", "leap.*"]
+
+[tool.setuptools.package-data]
+leap = ["**/*.yaml", "**/*.yml"]
 
 [tool.uv]
 dev-dependencies = [

@@ -152,7 +152,7 @@ When comparing multiple detection approaches:
 leap-eval --compare-prompts config1.yaml config2.yaml
 
 # Local (development)
-uv run python eval_runner.py --compare-prompts config1.yaml config2.yaml
+leap-eval --compare-prompts config1.yaml config2.yaml
 ```
 
 **Key Comparisons**:

@@ -31,19 +31,31 @@ We give a damn about building software that is reliable, performant, maintainabl
 
 ## Quick Start
 
-### For End Users
+### Simple Installation (Recommended)
 
+**If you have `uv` installed:**
 ```bash
 git clone git@github.com:james-livefront/engineering_principles.git
 cd engineering_principles
-./install.sh
+uv tool install .
 ```
 
-The script:
-- Checks Python version (3.11+ required)
-- Installs pipx if needed
-- Installs LEAP globally
-- Shows Claude Desktop config instructions
+**If you don't have `uv`:**
+```bash
+git clone git@github.com:james-livefront/engineering_principles.git
+cd engineering_principles
+./install.sh  # Auto-installs uv and LEAP
+```
+
+**What this does:**
+- Creates isolated environment (no Python pollution)
+- Makes `leap`, `leap-mcp-server`, `leap-eval` globally available
+- Requires Python 3.11+
+
+**Install `uv` separately (one-time):**
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
 
 ### For Developers
 
@@ -72,13 +84,13 @@ uv run python principles_cli.py dependencies --platform web react typescript
 
 # » Test prompt effectiveness (requires API keys in .env)
 cp .env.example .env  # Edit with your API keys
-uv run python eval_runner.py --mode detection --platform web --focus accessibility
+uv run python eval_runner.py --platform web --focus accessibility
 
-# » Improved mode attempts to increase detection with LLM analysis
-uv run python eval_runner.py --mode detection --platform web --focus security --enhanced
+# » Test prompt effectiveness with API evaluation
+uv run python eval_runner.py --platform web --focus security
 
 # » Install MCP server globally for AI agent integration
-pipx install .
+uv tool install .
 
 # » Or start MCP server manually for testing
 make mcp-server
@@ -190,10 +202,10 @@ Two prompt types with integrated YAML detection rules:
 
 ```bash
 # Set up AI assistant with system prompt
-python principles_cli.py generate --platform web --component ui > system.txt
+leap generate --platform web --component ui > system.txt
 
 # Use for specific review tasks
-python principles_cli.py review --platform web --focus security > review.txt
+leap review --platform web --focus security > review.txt
 ```
 
 **Enhancement Layers:**
@@ -216,7 +228,7 @@ AI Analysis (`--enhanced`):
 Generate prompts for reviewing existing code against engineering principles.
 
 ```bash
-python principles_cli.py review --platform <platform> --focus <areas>
+leap review --platform <platform> --focus <areas>
 ```
 
 **Options:**
@@ -228,24 +240,24 @@ python principles_cli.py review --platform <platform> --focus <areas>
 
 ```bash
 # Focus on security and accessibility for web
-uv run python principles_cli.py review --platform web --focus security,accessibility
+leap review --platform web --focus security,accessibility
 
 # Review Android code with focus on UI concerns
-uv run python principles_cli.py review --platform android --focus accessibility,testing
+leap review --platform android --focus accessibility,testing
 
 # Review backend service with focus on security and architecture
-uv run python principles_cli.py review --platform web --focus security,architecture
+leap review --platform web --focus security,architecture
 
 # Just security for iOS
-uv run python principles_cli.py review --platform ios --focus security
+leap review --platform ios --focus security
 ```
-
+~~~~
 #### `generate` - Code Writing Prompts
 
 Generate prompts for writing new code that follows principles.
 
 ```bash
-uv run python principles_cli.py generate --platform <platform> --component <type>
+leap generate --platform <platform> --component <type>
 ```
 
 **Options:**
@@ -263,13 +275,13 @@ uv run python principles_cli.py generate --platform <platform> --component <type
 
 ```bash
 # Generate UI component prompt for web (includes accessibility guidance)
-uv run python principles_cli.py generate --platform web --component ui
+leap generate --platform web --component ui
 
 # Generate business logic prompt for Android (includes testing guidance)
-uv run python principles_cli.py generate --platform android --component business-logic
+leap generate --platform android --component business-logic
 
 # Generate data layer prompt (includes security guidance)
-uv run python principles_cli.py generate --platform ios --component data-layer
+leap generate --platform ios --component data-layer
 ```
 
 #### `architecture` - Architecture Guidance
@@ -277,7 +289,7 @@ uv run python principles_cli.py generate --platform ios --component data-layer
 Generate architectural guidance for specific layers.
 
 ```bash
-uv run python principles_cli.py architecture --platform <platform> --layer <layer>
+leap architecture --platform <platform> --layer <layer>
 ```
 
 #### `dependencies` - Dependency Evaluation
@@ -285,17 +297,17 @@ uv run python principles_cli.py architecture --platform <platform> --layer <laye
 Generate prompts for evaluating third-party dependencies.
 
 ```bash
-uv run python principles_cli.py dependencies --platform <platform> <dependency1> <dependency2> ...
+leap dependencies --platform <platform> <dependency1> <dependency2> ...
 ```
 
 **Examples:**
 
 ```bash
 # Evaluate web dependencies
-uv run python principles_cli.py dependencies --platform web lodash axios
+leap dependencies --platform web lodash axios
 
 # Evaluate Android dependencies
-uv run python principles_cli.py dependencies --platform android rxjava3 retrofit
+leap dependencies --platform android rxjava3 retrofit
 ```
 
 ### Platform-Specific Considerations
@@ -346,14 +358,15 @@ MCP server provides real-time access to engineering principles, detection patter
 ### Installation
 
 ```bash
-pip install pipx
 cd /path/to/engineering_principles
-pipx install .
+./install.sh
+# Or manually with uv:
+uv tool install .
 ```
 
 Global commands:
 - `leap-mcp-server` - MCP server for AI agents
-- `leap-review` - Code review prompts
+- `leap` - Main CLI (review, generate, architecture, dependencies)
 - `leap-eval` - Evaluation tests
 
 For development: Use `uv run python principles_cli.py` for immediate code changes.
@@ -361,7 +374,7 @@ For development: Use `uv run python principles_cli.py` for immediate code change
 ### Starting the Server Manually
 
 ```bash
-leap-mcp-server                  # pipx installation
+leap-mcp-server                  # uv tool installation
 make mcp-server                  # local development
 uv run python leap_mcp_server.py # direct execution
 ```
@@ -446,7 +459,7 @@ Get guidance on how to classify violation severity levels.
 
 ### Adding to Claude Desktop
 
-After `pipx install .`, add to config:
+After installation (`./install.sh` or `uv tool install .`), add to config:
 
 **Location:** `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 
@@ -531,13 +544,13 @@ Target specific principles based on review needs:
 
 ```bash
 # Focus on UI concerns for frontend code
-$ python principles_cli.py review --platform web --focus accessibility,design_integrity
+$ leap review --platform web --focus accessibility,design_integrity
 
 # Focus on backend concerns for services
-$ python principles_cli.py review --platform android --focus security,testing,architecture
+$ leap review --platform android --focus security,testing,architecture
 
 # Focus on specific principle for targeted review
-$ python principles_cli.py review --platform ios --focus security
+$ leap review --platform ios --focus security
 ```
 
 Common combinations:
@@ -627,50 +640,50 @@ Configuration priority:
 
 ```bash
 # Auto-detect platform and focus from prompt metadata
-uv run python principles_cli.py review --platform web --focus security > prompt.txt
-uv run python eval_runner.py --prompt-file prompt.txt  # Note: --mode detection is the default
+leap review --platform web --focus security > prompt.txt
+leap-eval --prompt-file prompt.txt
 
 # Or manually specify platform and focus (overrides metadata)
-uv run python eval_runner.py --prompt-file prompt.txt --platform android --focus testing
+leap-eval --prompt-file prompt.txt --platform android --focus testing
 
-# Test with LLM enhancement for better accuracy
-uv run python eval_runner.py --prompt-file prompt.txt --enhanced
+# Test with specific platform and focus
+leap-eval --prompt-file prompt.txt
 
 # Explicitly specify generation mode (detection is default)
-uv run python eval_runner.py --mode generation --categories ui_component
+leap-eval --categories ui_component
 ```
 
 **Specific Principles:**
 
 ```bash
 # Test only security and accessibility (default improved)
-uv run python eval_runner.py --mode detection --principles security,accessibility
+leap-eval --principles security,accessibility
 
-# Test with LLM enhancement for latest practices
-uv run python eval_runner.py --mode detection --principles security,accessibility --enhanced
+# Test with specific principles
+leap-eval --principles security,accessibility
 
 # Test only architecture principles
-uv run python eval_runner.py --mode detection --principles architecture
+leap-eval --principles architecture
 ```
 
 **Custom Prompts:**
 
 ```bash
 # Test your own prompt file
-uv run python principles_cli.py review --platform web > my_prompt.txt
-uv run python eval_runner.py --prompt-file my_prompt.txt --mode detection
+leap review --platform web > my_prompt.txt
+leap-eval --prompt-file my_prompt.txt
 
 # Save results to file
-uv run python eval_runner.py --mode detection --output results.md
+leap-eval --output results.md
 ```
 
 **Model Comparison:**
 
 ```bash
 # Compare different models on same test
-uv run python eval_runner.py --provider openai --model gpt-4o --output gpt4_results.md
-uv run python eval_runner.py --provider anthropic --output claude_results.md
-uv run python eval_runner.py --provider groq --output groq_results.md
+leap-eval --provider openai --model gpt-4o --output gpt4_results.md
+leap-eval --provider anthropic --output claude_results.md
+leap-eval --provider groq --output groq_results.md
 
 # Compare results
 diff gpt4_results.md claude_results.md
@@ -680,16 +693,16 @@ diff gpt4_results.md claude_results.md
 
 ```bash
 # Test generation prompts
-uv run python eval_runner.py --mode generation --categories ui_component
+leap-eval --categories ui_component
 
 # Test both detection and generation
-uv run python eval_runner.py --mode both --output full_report.md
+leap-eval --output full_report.md
 ```
 
 ### Evaluation Runner Defaults
 
 Defaults:
-- Mode: `detection` (use `--mode generation` or `--mode both` to change)
+- Detection mode (always enabled)
 - Parallel execution: Enabled (use `--no-parallel` to disable)
 - Provider: Auto-detect from available API keys
 - Model: Provider's recommended model unless specified
@@ -742,10 +755,10 @@ Enforce principles before commits:
 # .git/hooks/pre-commit
 
 echo "Checking engineering principles..."
-uv run python principles_cli.py review --platform web --focus security,accessibility
+leap review --platform web --focus security,accessibility
 
 # Optional: Use with an AI tool to review staged changes
-# git diff --staged | your-ai-tool --prompt "$(uv run python principles_cli.py review)"
+# git diff --staged | your-ai-tool --prompt "$(leap review)"
 ```
 
 Make executable: `chmod +x .git/hooks/pre-commit`
@@ -823,7 +836,7 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          python eval_runner.py --mode detection --output eval_results.md
+          leap-eval --output eval_results.md
           cat eval_results.md >> $GITHUB_STEP_SUMMARY
 ```
 
@@ -833,42 +846,42 @@ jobs:
 
 ```bash
 # 1. Generate code for the new feature
-uv run python principles_cli.py generate --platform web --component ui > feature_prompt.txt
+leap generate --platform web --component ui > feature_prompt.txt
 
 # 2. Use prompt with your AI assistant to write initial code
 cat feature_prompt.txt | your-ai-tool
 
 # 3. Review the generated code
-uv run python principles_cli.py review --platform web --focus security,accessibility > review_prompt.txt
+leap review --platform web --focus security,accessibility > review_prompt.txt
 
 # 4. Use review prompt to check compliance
 cat review_prompt.txt | your-ai-tool --input generated_code.tsx
 
 # 5. Test prompt effectiveness
-uv run python eval_runner.py --prompt-file review_prompt.txt --mode detection
+leap-eval --prompt-file review_prompt.txt
 ```
 
 ### Testing Prompt Effectiveness
 
 ```bash
 # Test default improved prompts (85% accuracy)
-uv run python eval_runner.py --mode detection --principles security,accessibility --output baseline.md
+leap-eval --principles security,accessibility --output baseline.md
 
-# Test with latest security/accessibility practices
-uv run python eval_runner.py --mode detection --principles security,accessibility --enhanced --output llm_analysis.md
+# Test with specific focus areas
+leap-eval --principles security,accessibility --output llm_analysis.md
 
 # Compare detection modes
 diff baseline.md llm_analysis.md
 
 # Test generation prompts create compliant code
-uv run python eval_runner.py --mode generation --categories ui_component --output generation_report.md
+leap-eval --categories ui_component --output generation_report.md
 ```
 
 ### Dependency Evaluation Example
 
 ```bash
 # Check if a new dependency aligns with principles
-uv run python principles_cli.py dependencies --platform web some-new-library
+leap dependencies --platform web some-new-library
 
 # Output includes:
 # - Approval status (✅ APPROVED or ❌ NOT APPROVED)
@@ -892,21 +905,18 @@ python3 --version
 brew install python@3.11
 ```
 
-**"pipx: command not found" after installation:**
+**"leap-mcp-server: command not found":**
 ```bash
-# Ensure ~/.local/bin is in your PATH
+# Ensure uv tool bin directory is in your PATH
 export PATH="$HOME/.local/bin:$PATH"
 
 # Add to your shell profile (~/.zshrc or ~/.bash_profile):
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
 source ~/.zshrc
-```
 
-**"leap-mcp-server: command not found":**
-```bash
 # Reinstall LEAP
 cd /path/to/engineering_principles
-pipx install --force .
+uv tool install --force .
 
 # Check installation
 which leap-mcp-server
@@ -935,12 +945,12 @@ which leap-mcp-server
 4. Reinstall if needed:
    ```bash
    cd /path/to/engineering_principles
-   pipx reinstall engineering_principles
+   uv tool install --force .
    ```
 
 **"spawn leap-mcp-server ENOENT" error:**
 - The `leap-mcp-server` command isn't in Claude's PATH
-- Make sure you used `pipx install .` (not just `pip install`)
+- Make sure you used `uv tool install .` or `./install.sh` (not `pip install`)
 - Restart Claude Desktop after installation
 
 ### Common CLI Issues
@@ -964,7 +974,7 @@ which leap-mcp-server
 
 ```bash
 # Test LEAP installation
-leap-review --help
+leap --help
 leap-eval --help
 leap-mcp-server --version 2>&1 | head -5
 
@@ -972,7 +982,7 @@ leap-mcp-server --version 2>&1 | head -5
 uv run python -c "from eval_runner import load_config; print(load_config('eval_config.yaml'))"
 
 # Test provider setup (for developers)
-uv run python eval_runner.py --list-providers
+leap-eval --list-providers
 
 # Check YAML syntax (for developers)
 uv run python -c "import yaml; yaml.safe_load(open('core/principles.yaml'))"
@@ -993,7 +1003,7 @@ If you're still having issues:
 
 3. **Start fresh:**
    ```bash
-   pipx uninstall engineering_principles
+   uv tool uninstall engineering_principles
    ./install.sh
    ```
 
@@ -1003,7 +1013,7 @@ If you're still having issues:
 # Install and use Ollama for free local testing
 curl https://ollama.ai/install.sh | sh
 ollama pull llama3.1
-uv run python eval_runner.py --provider ollama --mode detection
+leap-eval --provider ollama
 ```
 
 ## Development
@@ -1125,49 +1135,49 @@ uv sync
 
 ```bash
 # Comprehensive security + accessibility review
-uv run python principles_cli.py review --platform web --focus security,accessibility,testing
+leap review --platform web --focus security,accessibility,testing
 
 # Generate cross-cutting architecture guidance
-uv run python principles_cli.py review --platform android --focus architecture,testing
+leap review --platform android --focus architecture,testing
 ```
 
-### Enhanced Mode Examples
+### Evaluation Examples
 
 ```bash
-# Enhanced security review with latest OWASP patterns
-uv run python eval_runner.py --mode detection --platform web --focus security --enhanced
+# Test security detection
+leap-eval --platform web --focus security
 
-# Test enhanced accessibility prompt
-uv run python eval_runner.py --platform web --focus accessibility --enhanced
+# Test accessibility detection
+leap-eval --platform web --focus accessibility
 
-# Test comprehensive coverage across all areas
-uv run python eval_runner.py --mode detection --enhanced --platform web
+# Test comprehensive detection
+leap-eval --platform web
 ```
 
 ### Integration Workflows
 
 ```bash
 # 1. Generate prompts for your platform
-uv run python principles_cli.py review --platform web --focus security > security_prompt.md
+leap review --platform web --focus security > security_prompt.md
 
 # 2. Test effectiveness against your codebase
-uv run python eval_runner.py --prompt-file security_prompt.md --mode detection
+leap-eval --prompt-file security_prompt.md
 
-# 3. Use improved mode for latest coverage
-uv run python eval_runner.py --prompt-file security_prompt.md --enhanced --mode detection
+# 3. Test effectiveness
+leap-eval --prompt-file security_prompt.md
 ```
 
 ### Custom Evaluation
 
 ```bash
 # Test specific principles only
-uv run python eval_runner.py --mode detection --principles security,accessibility
+leap-eval --principles security,accessibility
 
 # Generate code compliance testing
-uv run python eval_runner.py --mode generation --platform android --categories ui
+leap-eval  --platform android --categories ui
 
 # Export detailed reports
-uv run python eval_runner.py --mode detection --enhanced --output results.json
+leap-eval --output results.json
 ```
 
 ### Contributing

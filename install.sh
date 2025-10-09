@@ -28,28 +28,33 @@ fi
 echo "✅ Python $PYTHON_VERSION found"
 echo ""
 
-# Check if pipx is installed
-echo "Checking for pipx..."
-if ! command -v pipx &> /dev/null; then
-    echo "📦 Installing pipx..."
-    python3 -m pip install --user pipx
-    python3 -m pipx ensurepath
+# Check if uv is installed
+echo "Checking for uv..."
+if ! command -v uv &> /dev/null; then
+    echo "📦 Installing uv (modern Python package manager)..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
 
-    # Reload PATH
-    export PATH="$HOME/.local/bin:$PATH"
+    # Reload PATH - uv installs to ~/.local/bin or ~/.cargo/bin
+    export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 
-    if ! command -v pipx &> /dev/null; then
-        echo "❌ pipx installation failed. Please run: python3 -m pip install --user pipx"
+    # Source the cargo env if it exists (for uv installed via cargo)
+    if [ -f "$HOME/.cargo/env" ]; then
+        source "$HOME/.cargo/env"
+    fi
+
+    if ! command -v uv &> /dev/null; then
+        echo "❌ uv installation failed. Please install manually:"
+        echo "   curl -LsSf https://astral.sh/uv/install.sh | sh"
         exit 1
     fi
 fi
 
-echo "✅ pipx is installed"
+echo "✅ uv is installed"
 echo ""
 
 # Install LEAP
 echo "📦 Installing LEAP..."
-pipx install --force .
+uv tool install --force .
 
 if [ $? -eq 0 ]; then
     echo ""
@@ -57,7 +62,7 @@ if [ $? -eq 0 ]; then
     echo ""
     echo "Available commands:"
     echo "  • leap-mcp-server  - MCP server for AI integration"
-    echo "  • leap-review      - Generate code review prompts"
+    echo "  • leap             - Main CLI (review, generate, architecture, dependencies)"
     echo "  • leap-eval        - Run evaluation tests"
     echo ""
     echo "Next steps:"

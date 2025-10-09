@@ -722,11 +722,11 @@ def main() -> None:
 
         # Apply enhancement if requested
         if hasattr(args, "enhanced") and args.enhanced:
-            from leap.prompt_enhancer import enhance_prompt_with_llm, get_openai_evaluator
+            from leap.prompt_enhancer import enhance_prompt_with_llm, get_openai_client
 
-            evaluator = get_openai_evaluator()
-            if evaluator is not None:
-                prompt = enhance_prompt_with_llm(prompt, evaluator)  # type: ignore[arg-type]
+            client = get_openai_client()
+            if client is not None:
+                prompt = enhance_prompt_with_llm(prompt, client)
             else:
                 print(
                     "⚠️ Enhancement skipped: OPENAI_API_KEY not set or openai package not installed",
