@@ -15,7 +15,7 @@ class LeapLoader:
     def __init__(self, base_path: Path | None = None):
         """Initialize loader with base path"""
         if base_path is None:
-            base_path = Path(__file__).parent.parent
+            base_path = Path(__file__).parent
 
         self.base_path = base_path
         self.core_path = self.base_path / "core"
@@ -63,14 +63,16 @@ class LeapLoader:
         rules_path = self.modules_path / "detection" / "rules"
 
         if focus_area:
-            file_path = rules_path / f"{focus_area}_rules.yaml"
+            file_path = rules_path / f"{focus_area}.yaml"
             if file_path.exists():
                 return self.load_yaml(file_path)
 
         all_rules = {}
         if rules_path.exists():
-            for rule_file in rules_path.glob("*_rules.yaml"):
-                rule_name = rule_file.stem.replace("_rules", "")
+            for rule_file in rules_path.glob("*.yaml"):
+                if rule_file.name == "__init__.py":
+                    continue
+                rule_name = rule_file.stem
                 all_rules[rule_name] = self.load_yaml(rule_file)
 
         return all_rules
