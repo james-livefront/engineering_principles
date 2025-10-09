@@ -133,7 +133,21 @@ class MultiConfigReport:
 
 
 class PromptEvaluator:
-    def __init__(self, base_path: str = "."):
+    def __init__(self, base_path: str | None = None):
+        if base_path is None:
+            # Use package directory (for installed package) or current directory (for development)
+            # Try to find the evals directory relative to this module
+            module_dir = Path(__file__).parent
+            if (module_dir / "leap" / "evals").exists():
+                # Development mode: evals are in ./leap/evals relative to eval_runner.py
+                base_path = str(module_dir)
+            elif (module_dir / "evals").exists():
+                # Installed package: evals are in the same directory as eval_runner.py
+                base_path = str(module_dir)
+            else:
+                # Fallback to current directory
+                base_path = "."
+
         self.base_path = Path(base_path)
         self.detection_tests = self._load_detection_tests()
         self.generation_tests = self._load_generation_tests()
@@ -141,7 +155,10 @@ class PromptEvaluator:
     def _load_detection_tests(self) -> dict[str, list[dict[str, Any]]]:
         """Load detection test cases"""
         tests = {}
-        detection_dir = self.base_path / "evals" / "detection"
+        # Check both old and new locations for backward compatibility
+        detection_dir = self.base_path / "leap" / "evals" / "detection"
+        if not detection_dir.exists():
+            detection_dir = self.base_path / "evals" / "detection"
 
         if detection_dir.exists():
             for test_file in detection_dir.glob("*_test_cases.yaml"):
@@ -159,7 +176,10 @@ class PromptEvaluator:
     def _load_generation_tests(self) -> dict[str, list[dict[str, Any]]]:
         """Load generation test cases"""
         tests = {}
-        generation_dir = self.base_path / "evals" / "generation"
+        # Check both old and new locations for backward compatibility
+        generation_dir = self.base_path / "leap" / "evals" / "generation"
+        if not generation_dir.exists():
+            generation_dir = self.base_path / "evals" / "generation"
 
         if generation_dir.exists():
             for test_file in generation_dir.glob("*_challenges.yaml"):
@@ -217,9 +237,11 @@ class PromptEvaluator:
                 filtered_test_cases = [
                     tc
                     for tc in test_cases
-                    if tc.get("category", "").lower() == prompt_platform.lower()
-                    or "platform" not in tc
-                    or tc.get("platform", "").lower() == prompt_platform.lower()
+                    if "platforms" not in tc  # No platform specified = applicable to all
+                    or "all"
+                    in [p.lower() for p in tc.get("platforms", [])]  # Explicitly marked as "all"
+                    or prompt_platform.lower()
+                    in [p.lower() for p in tc.get("platforms", [])]  # Matches platform
                 ]
                 if filtered_test_cases != test_cases:
                     platform_msg = f"platform '{prompt_platform}'"
@@ -706,12 +728,16 @@ def main() -> None:
         "General --output results.json",
     )
 
-    parser.add_argument("--mode", choices=["detection", "generation", "both"], default="detection")
+    # Mode is always detection - removed the flag for simplicity
     parser.add_argument("--principles", nargs="*", help="Principles to test")
     parser.add_argument("--platform", choices=["android", "ios", "web"])
     parser.add_argument("--focus", help="Comma-separated focus areas")
     parser.add_argument("--output", help="Output file for report")
     parser.add_argument("--prompt-file", help="Prompt file to test")
+
+    # API configuration
+    parser.add_argument("--provider", default="openai", help="API provider (default: openai)")
+    parser.add_argument("--model", default="gpt-4o", help="Model to use (default: gpt-4o)")
 
     # Multi-prompt comparison arguments
     parser.add_argument(
@@ -736,6 +762,46 @@ def main() -> None:
         args.principles = principles
 
     evaluator = PromptEvaluator()
+
+    # Determine what to test - either from args or from prompt metadata
+    effective_principles = args.principles
+    if args.focus:
+        effective_principles = [x.strip() for x in args.focus.split(",")]
+
+    # If still no principles specified, check if we have prompt metadata
+    if not effective_principles and args.prompt_file:
+        with open(args.prompt_file) as f:
+            test_prompt = f.read()
+        metadata = parse_prompt_metadata(test_prompt)
+        if metadata.get("focus"):
+            effective_principles = [x.strip() for x in metadata["focus"].split(",")]
+
+    # If STILL no principles, we need to ask the user
+    if not effective_principles and not args.compare_prompts:
+        total_tests = sum(len(tests) for tests in evaluator.detection_tests.values())
+        print("\n⚠️  WARNING: No focus areas specified!")
+        print(f"\nThis will run {total_tests} tests across ALL principles:")
+        for principle in sorted(evaluator.detection_tests.keys()):
+            count = len(evaluator.detection_tests[principle])
+            print(f"  - {principle} ({count} test cases)")
+        print(f"\n💰 This will make {total_tests} API calls and may incur costs!")
+        print("\nYou can specify focus with:")
+        print("  --focus security,accessibility")
+        print("  or include metadata in your prompt file like:")
+        print("  <!-- PROMPT_METADATA")
+        print("  platform: web")
+        print("  focus: security,accessibility")
+        print("  -->")
+        print("\n❓ Continue with ALL principles? (y/N): ", end="", flush=True)
+
+        import sys
+
+        response = sys.stdin.readline().strip().lower()
+        if response != "y":
+            print("\n✋ Cancelled. Please specify --focus or add metadata to your prompt.")
+            return
+        print(f"\n🚀 Running {total_tests} tests across all principles...")
+        # If user said yes, effective_principles stays None (will test all)
 
     # Handle multi-prompt comparison mode
     if args.compare_prompts:
@@ -767,75 +833,68 @@ def main() -> None:
         if args.focus:
             effective_principles = [x.strip() for x in args.focus.split(",")]
 
-        if args.mode in ["detection", "both"]:
-            api_evaluator = APIEvaluator("openai", "gpt-4o", "https://api.openai.com/v1")
+        # Always run detection evaluation
+        ai_evaluator = APIEvaluator(args.provider, args.model, "https://api.openai.com/v1")
 
-            # Run multi-prompt evaluation
-            multi_report = evaluator.evaluate_multiple_configs(
-                configs, api_evaluator, effective_principles, args.parallel
+        # Run multi-prompt evaluation
+        multi_report = evaluator.evaluate_multiple_configs(
+            configs, ai_evaluator, effective_principles, args.parallel
+        )
+
+        # Print clean comparison results
+        print("\n📊 COMPARISON RESULTS")
+        print("=" * 60)
+
+        # Performance matrix with clean formatting
+        for config_name, metrics in multi_report.comparison_matrix.items():
+            print(
+                f"{config_name:20} | Accuracy: {metrics['accuracy']:5.1%} | "
+                f"Precision: {metrics['precision']:5.1%} | "
+                f"Recall: {metrics['recall']:5.1%} | F1: {metrics['f1_score']:5.1%}"
             )
 
-            # Print clean comparison results
-            print("\n📊 COMPARISON RESULTS")
-            print("=" * 60)
+        # Overall best performer
+        best_f1_config = multi_report.best_config_per_metric.get("f1_score")
+        if best_f1_config:
+            best_f1_value = multi_report.comparison_matrix[best_f1_config]["f1_score"]
+            print(f"\n🏆 OVERALL BEST: {best_f1_config} (F1 Score: {best_f1_value:.1%})")
 
-            # Performance matrix with clean formatting
-            for config_name, metrics in multi_report.comparison_matrix.items():
-                print(
-                    f"{config_name:20} | Accuracy: {metrics['accuracy']:5.1%} | "
-                    f"Precision: {metrics['precision']:5.1%} | "
-                    f"Recall: {metrics['recall']:5.1%} | F1: {metrics['f1_score']:5.1%}"
-                )
-
-            # Overall best performer
-            best_f1_config = multi_report.best_config_per_metric.get("f1_score")
-            if best_f1_config:
-                best_f1_value = multi_report.comparison_matrix[best_f1_config]["f1_score"]
-                print(f"\n🏆 OVERALL BEST: {best_f1_config} (F1 Score: {best_f1_value:.1%})")
-
-            # Output detailed results if requested
-            if args.output:
-                _write_multi_config_report(multi_report, args.output)
-                print(f"\n📁 Detailed report written to: {args.output}")
+        # Output detailed results if requested
+        if args.output:
+            _write_multi_config_report(multi_report, args.output)
+            print(f"\n📁 Detailed report written to: {args.output}")
 
         return
 
     # Single config mode (existing logic)
-    if args.prompt_file:
+    if args.prompt_file and "test_prompt" not in locals():
         with open(args.prompt_file) as f:
             test_prompt = f.read()
-    else:
+    elif "test_prompt" not in locals():
         test_prompt = "You are a code reviewer. Find violations of engineering principles."
 
-    effective_principles = args.principles
-    if args.focus:
-        effective_principles = [x.strip() for x in args.focus.split(",")]
-
-    print(f"Mode: {args.mode}")
     if args.platform:
         print(f"Platform: {args.platform}")
     if effective_principles:
         print(f"Focus: {', '.join(effective_principles)}")
 
-    if args.mode in ["detection", "both"]:
-        api_evaluator = APIEvaluator("openai", "gpt-4o", "https://api.openai.com/v1")
+    # Always run detection evaluation
+    ai_evaluator = APIEvaluator(args.provider, args.model, "https://api.openai.com/v1")
 
-        report = evaluator.evaluate_detection_prompt(
-            test_prompt, api_evaluator, effective_principles
-        )
+    report = evaluator.evaluate_detection_prompt(test_prompt, ai_evaluator, effective_principles)
 
-        # Simple report output
-        print(f"\nResults: {report.accuracy:.2%} accuracy")
-        print(f"Precision: {report.precision:.2%}")
-        print(f"Recall: {report.recall:.2%}")
-        print(f"F1 Score: {report.f1_score:.2%}")
+    # Simple report output
+    print(f"\nResults: {report.accuracy:.2%} accuracy")
+    print(f"Precision: {report.precision:.2%}")
+    print(f"Recall: {report.recall:.2%}")
+    print(f"F1 Score: {report.f1_score:.2%}")
 
-        if args.output:
-            with open(args.output, "w") as f:
-                f.write(f"Accuracy: {report.accuracy:.2%}\n")
-                f.write(f"Precision: {report.precision:.2%}\n")
-                f.write(f"Recall: {report.recall:.2%}\n")
-                f.write(f"F1 Score: {report.f1_score:.2%}\n")
+    if args.output:
+        with open(args.output, "w") as f:
+            f.write(f"Accuracy: {report.accuracy:.2%}\n")
+            f.write(f"Precision: {report.precision:.2%}\n")
+            f.write(f"Recall: {report.recall:.2%}\n")
+            f.write(f"F1 Score: {report.f1_score:.2%}\n")
 
 
 if __name__ == "__main__":

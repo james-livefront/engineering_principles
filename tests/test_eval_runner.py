@@ -40,7 +40,9 @@ class TestPromptEvaluator:
     def test_prompt_evaluator_init(self) -> None:
         """Test PromptEvaluator initialization."""
         evaluator = eval_runner.PromptEvaluator()
-        assert evaluator.base_path == Path(".")
+        # base_path is now auto-detected (should be the module directory or current dir)
+        assert isinstance(evaluator.base_path, Path)
+        assert evaluator.base_path.exists()
         assert isinstance(evaluator.detection_tests, dict)
         assert isinstance(evaluator.generation_tests, dict)
 
@@ -118,33 +120,8 @@ class TestUtilityFunctions:
         assert isinstance(result, str)
         assert "Generated code would appear here" in result
 
-    def test_enhance_prompt_with_llm_api_error(self) -> None:
-        """Test prompt enhancement when API fails."""
-        prompt = "You are a code reviewer."
-
-        # Create a mock API evaluator that will fail
-        class FailingAPIEvaluator:
-            provider = "openai"
-            model = "gpt-4o"
-            base_url = "https://api.openai.com/v1"
-
-            def evaluate_code(self, prompt: str) -> str:
-                raise Exception("API Error")
-
-        mock_api_evaluator = FailingAPIEvaluator()
-
-        # Ensure no cache file exists
-        import hashlib
-
-        prompt_hash = hashlib.md5(prompt.encode()).hexdigest()
-        cache_dir = Path(".cache")
-        cache_file = cache_dir / f"enhanced_{prompt_hash}.txt"
-        if cache_file.exists():
-            cache_file.unlink()
-
-        result = eval_runner.enhance_prompt_with_llm(prompt, mock_api_evaluator, show_diff=False)  # type: ignore
-        # Should return original prompt when enhancement fails
-        assert result == prompt
+    # NOTE: enhance_prompt_with_llm was removed - feature not implemented
+    # If we add LLM enhancement back, add tests here
 
 
 class TestSmartContextDetection:
